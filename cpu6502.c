@@ -169,7 +169,143 @@ void clock(CPU6502* cpu){
     cpu->cycles--;
 }
 
+u_int8_t fetch(CPU6502* cpu){
+    if(cpu->lookup[cpu->opcode].addr_mode != IMP){
+        cpu->fetched = read(cpu, cpu->addr_abs);
+    }
+    return cpu->fetched;
+}
 
+/**
+ * Addressing Modes for the 6502
+ * These handle how the CPU is able to access memory, which is indicated by the particular instruction used.
+ */
 
+u_int8_t IMP(CPU6502* cpu){
+    cpu->fetched = cpu->a;
+    return 0;
+}
 
+u_int8_t IMM(CPU6502* cpu){
+    cpu->addr_abs = cpu->pc++;
+    return 0;
+}
 
+u_int8_t ZP0(CPU6502* cpu){
+    cpu->addr_abs = read(cpu, cpu->pc);
+    cpu->pc++;
+    cpu->addr_abs &= 0x00FF;
+    return 0;
+}
+
+u_int8_t ZPX(CPU6502* cpu){
+    cpu->addr_abs = read(cpu, cpu->pc) + cpu->x;
+    cpu->pc++;
+    cpu->addr_abs &= 0x00FF;
+    return 0;
+}
+
+u_int8_t ZPY(CPU6502* cpu){
+    cpu->addr_abs = read(cpu, cpu->pc) + cpu->y;
+    cpu->pc++;
+    cpu->addr_abs &= 0x00FF;
+    return 0;
+}
+
+u_int8_t REL(CPU6502* cpu){
+    cpu->addr_rel = read(cpu, cpu->pc);
+    cpu->pc++;
+
+    if(cpu->addr_rel & 0x80){
+        cpu->addr_rel |= 0xFF00;
+    }
+    return 0;
+}
+
+u_int8_t ABS(CPU6502* cpu){
+    u_int16_t low = read(cpu, cpu->pc);
+    cpu->pc++;
+    u_int16_t high = read(cpu, cpu->pc);
+    cpu->pc++;
+
+    cpu->addr_abs = (high << 8) | low;
+    return 0;
+}
+
+u_int8_t ABX(CPU6502* cpu){
+    u_int16_t low = read(cpu, cpu->pc);
+    cpu->pc++;
+    u_int16_t high = read(cpu, cpu->pc);
+    cpu->pc++;
+
+    cpu->addr_abs = (high << 8) | low;
+    cpu->addr_abs += cpu->x;
+
+    if((cpu->addr_abs & 0xFF00) != (high << 8)){
+        return 1;
+    }
+    return 0;
+}
+
+u_int8_t ABY(CPU6502* cpu) {
+    u_int16_t low = read(cpu, cpu->pc);
+    cpu->pc++;
+    u_int16_t high = read(cpu, cpu->pc);
+    cpu->pc++;
+
+    cpu->addr_abs = (high << 8) | low;
+    cpu->addr_abs += cpu->y;
+
+    if((cpu->addr_abs & 0xFF00) != (high << 8)){
+        return 1;
+    }
+
+    return 0;
+}
+
+u_int8_t IND(CPU6502* cpu) {
+    u_int16_t low_address = read(cpu, cpu->pc);
+    cpu->pc++;
+    u_int16_t high_address = read(cpu, cpu->pc);
+    cpu->pc++;
+
+    u_int16_t address = (high_address << 8) | low_address;
+
+    //THIS IS ACTUALLY A BUG IN THE 6502 regarding page boundaries not being swapped correctly.
+    if(low_address == 0x00FF){
+        cpu->addr_abs = (read(cpu, address & 0xFF00) << 8) | read(cpu, address + 0);
+    }
+    else {
+        cpu->addr_abs = (read(cpu, address + 1) << 8) | read(cpu, address + 0);
+    }
+
+    return 0;
+}
+
+u_int8_t IZX(CPU6502* cpu){
+    u_int16_t temp =  read(cpu, cpu->pc);
+    cpu->pc++;
+
+    u_int16_t low = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x) & 0x00FF);
+    u_int16_t high = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x + 1) & 0x00FF);
+
+    cpu->addr_abs = (high << 8) | low;
+
+    return 0;
+}
+
+u_int8_t IZY(CPU6502* cpu) {
+    u_int16_t temp = read(cpu, cpu->pc);
+    cpu->pc++;
+
+    u_int16_t low = read(cpu, temp & 0x00FF);
+    u_int16_t high = read(cpu, (temp + 1) & 0x00FF);
+
+    cpu->addr_abs = (high << 8) | low;
+    cpu->addr_abs += cpu->y;
+
+    if((cpu->addr_abs & 0xFF00) != (high << 8)){
+        return 1;
+    }
+    return 0;
+}

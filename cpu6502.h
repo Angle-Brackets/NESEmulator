@@ -130,17 +130,88 @@ void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v);
  * These functions also may return a number representing if more cycles are needed.
  */
 
+/**
+ * Simple instruction with no additional data.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t IMP(CPU6502* cpu);
-u_int8_t ZP0(CPU6502* cpu);
-u_int8_t ZPY(CPU6502* cpu);
-u_int8_t ABS(CPU6502* cpu);
-u_int8_t ABY(CPU6502* cpu);
-u_int8_t IZX(CPU6502* cpu);
+/**
+ * Immediate Mode instruction, data is in the next byte
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t IMM(CPU6502* cpu);
+/**
+ * Allows absolute addressing of the first 256 bytes (first page) of memory.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
+u_int8_t ZP0(CPU6502* cpu);
+/**
+ * The address within the first page is offset by the X register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t ZPX(CPU6502* cpu);
+/**
+ * The address within the first page is offset by the Y register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
+u_int8_t ZPY(CPU6502* cpu);
+/**
+ * Addressing used for branch instructions, allows you to jump -128 to 127 bytes from the instruciton
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t REL(CPU6502* cpu);
+/**
+ * A given 16-bit address is loaded and used.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
+u_int8_t ABS(CPU6502* cpu);
+/**
+ * Contents of the X Register are added to the given absolute address
+ * If a page is turned, more cycles are required.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t ABX(CPU6502* cpu);
+/**
+ * Contents of the Y Register are added to the given absolute address
+ * If a page is turned, more cycles are required.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
+u_int8_t ABY(CPU6502* cpu);
+/**
+ * The given 16-bit address is read to get the address stored at that location (pointer)
+ * This has a bug in the hardware, and is emulated here:
+ *
+ * If the low byte is 0xFF, then we need to turn a page to read the next page
+ * boundary, but there is a bug in the hardware that doesn't make this work.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t IND(CPU6502* cpu);
+/**
+ * The given 8-bit address is offset by the X Register to index in page 0x00, then a
+ * 16-bit address is read from this location.
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
+u_int8_t IZX(CPU6502* cpu);
+/**
+ * The given 8-bit address is used to index in page 0x00, then a
+ * 16-bit address is read from this location and offset by the Y Register.
+ *
+ * More cycles are required if the offset resulted in a page turn.
+ *
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t IZY(CPU6502* cpu);
 
 /**
