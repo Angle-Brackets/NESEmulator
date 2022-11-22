@@ -5,16 +5,21 @@
 
 //Forward Declaring this so we can avoid a circular logic error.
 typedef struct Bus Bus;
+
 /**
- * The design of the CPU
+ * Constant struct used to represent possible each instruction.
+ */
+const struct INSTRUCTION {
+    char name[3];
+    u_int8_t (*operation)(struct CPU6502* cpu);
+    u_int8_t (*addr_mode)(struct CPU6502* cpu);
+    u_int8_t cycles;
+} INSTRUCTION;
+
+/**
+ * The design of the 6502 CPU
  */
 typedef struct CPU6502 {
-    struct INSTRUCTION {
-        char name[10];
-        u_int8_t (*operation)(struct CPU6502* cpu);
-        u_int8_t (*addr_mode)(struct CPU6502* cpu);
-    } INSTRUCTION;
-
     //General structure of an instruction, these are stored in lookup for easy access
     struct INSTRUCTION lookup[OPCODES];
 
@@ -38,7 +43,14 @@ typedef struct CPU6502 {
     u_int8_t opcode; //Instruction Byte
     u_int8_t cycles; //Count number of cycles remaining in the instruction
     u_int32_t clock_count; //Global counter of the number of clocks.
+
 } CPU6502;
+
+/**
+ * Initializes the 6502 CPU passed
+ * @param cpu 6502 CPU we're working with
+ */
+void initialize(CPU6502* cpu);
 
 /**
  * Resets the CPU into a known state
