@@ -33,6 +33,7 @@ typedef struct CPU6502 {
     u_int16_t pc; //Program Counter / Instruction Pointer
     u_int8_t status; //Condition Codes are set here
 
+    enum FLAGS6502 FLAGS;
     Bus* bus;
 
     //Emulator ONLY variables, help make the emulation easier to do
@@ -109,6 +110,20 @@ u_int8_t fetch(CPU6502* cpu);
  * @param bus Bus we're connecting to
  */
 void connect_bus(CPU6502* cpu, Bus* bus);
+
+/**
+ * Gets the current status of a particular flag
+ * @param f Flag struct to read
+ * @return The status of a particular bit
+ */
+u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f);
+
+/**
+ * Sets the flag of a particular bit
+ * @param f Flag struct to be written to
+ * @param v value to be written to the flag struct
+ */
+void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v);
 
 /**
  * All of the addressing modes available on the 6502 Processor, there are quite a bit!

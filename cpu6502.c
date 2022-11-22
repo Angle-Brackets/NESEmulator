@@ -45,6 +45,129 @@ void initialize(CPU6502* cpu) {
     };
 }
 
+u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {
+    return ((cpu->status & f) > 0) ? 1 : 0;
+}
+
+void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v) {
+    if (v)
+        cpu->status |= f;
+    else
+        cpu->status &= ~f;
+}
+
+void write(CPU6502* cpu, u_int16_t addr, u_int8_t data){
+    b_write(cpu->bus, addr, data);
+}
+
+u_int8_t read(CPU6502* cpu, u_int16_t addr){
+    return b_read(cpu->bus, addr, false);
+}
+
+void reset(CPU6502* cpu){
+    // Get the new address for PC
+    cpu->addr_abs = 0xFFFC;
+    u_int16_t low = read(cpu, cpu->addr_abs + 0);
+    u_int16_t high = read(cpu, cpu->addr_abs + 1);
+
+    //Set it!
+    cpu->pc = (high << 8) | low;
+
+    //Reset registers
+    cpu->a = UNITIALIZED;
+    cpu->x = UNITIALIZED;
+    cpu->y = UNITIALIZED;
+    cpu->stkp = 0xFD;
+    cpu->status = UNITIALIZED | U;
+
+    //Clear helper variables
+    cpu->addr_rel = UNITIALIZED;
+    cpu->addr_rel = UNITIALIZED;
+    cpu->fetched = UNITIALIZED;
+
+    cpu->cycles = 0;
+}
+
+void irq(CPU6502* cpu){
+    if(get_flag(cpu, I) == 0){
+        //We are now activating an interrupt, so we need to push PC to the stack
+        //it takes 2 pushes as the PC is a 16 bit value.
+        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
+        cpu->stkp--;
+        write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
+        cpu->stkp--;
+
+        //Now save all the status values to the stack
+        set_flag(cpu, B, 0);
+        set_flag(cpu, U, 1);
+        set_flag(cpu, I, 1);
+        write(cpu, 0x0100 + cpu->stkp, cpu->status);
+
+        // Grab the new PC from a fixed addr for interrupts
+        cpu->addr_abs = 0xFFFE;
+        u_int16_t low = read(cpu, cpu->addr_abs);
+        u_int16_t high = read(cpu, cpu->addr_abs + 1);
+
+        cpu->pc = (high << 8) | low;
+        cpu->cycles = 7;
+    }
+}
+
+void nmi(CPU6502 *cpu) {
+    //Similar affair to above, but this interrupt can't be ignored.
+    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0xFF);
+    cpu->stkp--;
+    write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0xFF);
+    cpu->stkp--;
+
+    //Write status to stack
+    set_flag(cpu, B, 0);
+    set_flag(cpu, U, 1);
+    set_flag(cpu, I, 1);
+    write(cpu, 0x0100 + cpu->stkp, cpu->status);
+    cpu->stkp--;
+
+    //Update PC
+    cpu->addr_abs = 0xFFFA;
+    u_int16_t low = read(cpu, cpu->addr_abs + 0);
+    u_int16_t high = read(cpu, cpu->addr_abs + 1);
+    cpu->pc = (high << 8) | low;
+
+    cpu->cycles = 8;
+}
+
+void clock(CPU6502* cpu){
+    //This is not a microcode accurate emulation of the hardware. All we're doing is effectively delaying the code
+    //By some amount of clock cycles to emulate the microcode at a high level.
+
+    if(cpu->cycles == 0){
+        //Read the next instruction byte
+        cpu->opcode = read(cpu, cpu->pc);
+
+        //Always set this to 1 (Not sure why)
+        set_flag(cpu, U, 1);
+
+        //Increment PC
+        cpu->pc++;
+
+        //Get the number of cycles for the next instruction
+        cpu->cycles = cpu->lookup[cpu->opcode].cycles;
+
+        //Grab the immediate data using the requisite addressing mode
+        u_int8_t cycle1 = (*cpu->lookup[cpu->opcode].addr_mode)(cpu);
+
+        //Perform Operation
+        u_int8_t cycle2 = (*cpu->lookup[cpu->opcode].operation)(cpu);
+
+        //Number of cycles might have been altered by the instruction (page swapping for example)
+        cpu->cycles += cycle1 + cycle2;
+        set_flag(cpu, U, 1);
+    }
+
+    //Increment global clock count and decrement cycles.
+    cpu->clock_count++;
+    cpu->cycles--;
+}
 
 
 
