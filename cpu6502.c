@@ -92,9 +92,9 @@ void irq(CPU6502* cpu){
     if(get_flag(cpu, I) == 0){
         //We are now activating an interrupt, so we need to push PC to the stack
         //it takes 2 pushes as the PC is a 16 bit value.
-        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
+        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
         cpu->stkp--;
-        write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
+        write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
         cpu->stkp--;
 
         //Now save all the status values to the stack
@@ -194,21 +194,21 @@ u_int8_t IMM(CPU6502* cpu){
 u_int8_t ZP0(CPU6502* cpu){
     cpu->addr_abs = read(cpu, cpu->pc);
     cpu->pc++;
-    cpu->addr_abs &= 0x00FF;
+    cpu->addr_abs &= LOW_BIT_MASK;
     return 0;
 }
 
 u_int8_t ZPX(CPU6502* cpu){
     cpu->addr_abs = read(cpu, cpu->pc) + cpu->x;
     cpu->pc++;
-    cpu->addr_abs &= 0x00FF;
+    cpu->addr_abs &= LOW_BIT_MASK;
     return 0;
 }
 
 u_int8_t ZPY(CPU6502* cpu){
     cpu->addr_abs = read(cpu, cpu->pc) + cpu->y;
     cpu->pc++;
-    cpu->addr_abs &= 0x00FF;
+    cpu->addr_abs &= LOW_BIT_MASK;
     return 0;
 }
 
@@ -216,8 +216,8 @@ u_int8_t REL(CPU6502* cpu){
     cpu->addr_rel = read(cpu, cpu->pc);
     cpu->pc++;
 
-    if(cpu->addr_rel & 0x80){
-        cpu->addr_rel |= 0xFF00;
+    if(cpu->addr_rel & SIGN_MASK){
+        cpu->addr_rel |= HIGH_BIT_MASK;
     }
     return 0;
 }
@@ -241,7 +241,7 @@ u_int8_t ABX(CPU6502* cpu){
     cpu->addr_abs = (high << 8) | low;
     cpu->addr_abs += cpu->x;
 
-    if((cpu->addr_abs & 0xFF00) != (high << 8)){
+    if((cpu->addr_abs & HIGH_BIT_MASK) != (high << 8)){
         return 1;
     }
     return 0;
@@ -256,7 +256,7 @@ u_int8_t ABY(CPU6502* cpu) {
     cpu->addr_abs = (high << 8) | low;
     cpu->addr_abs += cpu->y;
 
-    if((cpu->addr_abs & 0xFF00) != (high << 8)){
+    if((cpu->addr_abs & HIGH_BIT_MASK) != (high << 8)){
         return 1;
     }
 
@@ -272,8 +272,8 @@ u_int8_t IND(CPU6502* cpu) {
     u_int16_t address = (high_address << 8) | low_address;
 
     //THIS IS ACTUALLY A BUG IN THE 6502 regarding page boundaries not being swapped correctly.
-    if(low_address == 0x00FF){
-        cpu->addr_abs = (read(cpu, address & 0xFF00) << 8) | read(cpu, address + 0);
+    if(low_address == LOW_BIT_MASK){
+        cpu->addr_abs = (read(cpu, address & HIGH_BIT_MASK) << 8) | read(cpu, address + 0);
     }
     else {
         cpu->addr_abs = (read(cpu, address + 1) << 8) | read(cpu, address + 0);
@@ -286,8 +286,8 @@ u_int8_t IZX(CPU6502* cpu){
     u_int16_t temp =  read(cpu, cpu->pc);
     cpu->pc++;
 
-    u_int16_t low = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x) & 0x00FF);
-    u_int16_t high = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x + 1) & 0x00FF);
+    u_int16_t low = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x) & LOW_BIT_MASK);
+    u_int16_t high = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x + 1) & LOW_BIT_MASK);
 
     cpu->addr_abs = (high << 8) | low;
 
@@ -298,14 +298,589 @@ u_int8_t IZY(CPU6502* cpu) {
     u_int16_t temp = read(cpu, cpu->pc);
     cpu->pc++;
 
-    u_int16_t low = read(cpu, temp & 0x00FF);
-    u_int16_t high = read(cpu, (temp + 1) & 0x00FF);
+    u_int16_t low = read(cpu, temp & LOW_BIT_MASK);
+    u_int16_t high = read(cpu, (temp + 1) & LOW_BIT_MASK);
 
     cpu->addr_abs = (high << 8) | low;
     cpu->addr_abs += cpu->y;
 
-    if((cpu->addr_abs & 0xFF00) != (high << 8)){
+    if((cpu->addr_abs & HIGH_BIT_MASK) != (high << 8)){
         return 1;
     }
+    return 0;
+}
+
+/**
+ * Opcodes available in the 6502 Processor, certain invalid opcodes are not allowed.
+ */
+
+u_int8_t ADC(CPU6502* cpu){
+    //Grab the fetched value stored in our registers
+    fetch(cpu);
+
+    //The add is performed with 16 bits to account for overflow.
+    cpu->temp = (u_int16_t)cpu->a + (u_int16_t)cpu->fetched + (u_int16_t)get_flag(cpu, C);
+
+    //Carry bit is set if the sum we generate is over 256
+    set_flag(cpu, C, cpu->temp > 256);
+
+    //The zero flag is set if the sum is zero
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0);
+
+    //The overflow flag is set based on some possible conditions.
+    //If the sum is Positive + Positive = Negative or Negative + Negative = Positive
+    //We can be sure that an overflow occured, and that is what this expression captures.
+    set_flag(cpu, V, (~((u_int16_t)cpu->a ^ (u_int16_t)cpu->fetched) & ((u_int16_t)cpu->a ^ (u_int16_t)cpu->temp)) & 0x0080);
+
+    //We look at the left-most bit to decide if it is negative (1 = negative)
+    set_flag(cpu, N, cpu->temp & SIGN_MASK);
+
+    //Put the result in the accumulator and mask it down to 8 bits for size reasons.
+    cpu->a = cpu->temp & LOW_BIT_MASK;
+
+    return 1;
+}
+
+u_int8_t SBC(CPU6502* cpu){
+    fetch(cpu);
+
+    u_int16_t value = ((u_int16_t)cpu->fetched ^ LOW_BIT_MASK);
+
+    //Now everything is the same as addition due to math!
+    cpu->temp = (u_int16_t)cpu->a + (u_int16_t)value + (u_int16_t)get_flag(cpu, C);
+
+    set_flag(cpu, C, cpu->temp > 256);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0);
+    set_flag(cpu, V, (~((u_int16_t)cpu->a ^ (u_int16_t)cpu->fetched) & ((u_int16_t)cpu->a ^ (u_int16_t)cpu->temp)) & 0x0080);
+    set_flag(cpu, N, cpu->temp & SIGN_MASK);
+    cpu->a = cpu->temp & LOW_BIT_MASK;
+
+    return 1;
+}
+
+u_int8_t AND(CPU6502* cpu){
+    fetch(cpu);
+    cpu->a = cpu->a & cpu->fetched;
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 1;
+}
+
+u_int8_t ASL(CPU6502* cpu){
+    fetch(cpu);
+    cpu->temp = (u_int16_t)cpu->fetched << 1;
+    set_flag(cpu, C, (cpu->temp & HIGH_BIT_MASK) > 0);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == ZERO);
+    set_flag(cpu, N, cpu->temp & SIGN_MASK);
+
+    if(cpu->lookup[cpu->opcode].addr_mode == IMP){
+        cpu->a = cpu->temp & LOW_BIT_MASK;
+    }
+    else{
+        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    }
+
+    return 0;
+}
+
+u_int8_t BCC(CPU6502* cpu){
+    if(get_flag(cpu, C) == 0){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BCS(CPU6502* cpu){
+    if(get_flag(cpu, C) == 1){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BEQ(CPU6502* cpu){
+    if(get_flag(cpu, Z) == 1){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BIT(CPU6502* cpu){
+    fetch(cpu);
+    cpu->temp = cpu->a & cpu->fetched;
+
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == ZERO);
+    set_flag(cpu, N, cpu->fetched & (1 << 7));
+    set_flag(cpu, V, cpu->fetched & (1 << 6));
+    return 0;
+}
+
+u_int8_t BMI(CPU6502* cpu){
+    if(get_flag(cpu, N) == 1){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BNE(CPU6502* cpu){
+    if(get_flag(cpu, Z) == 0){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BPL(CPU6502* cpu){
+    if(get_flag(cpu, N) == 0){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BRK(CPU6502* cpu){
+    cpu->pc++;
+
+    set_flag(cpu, I, 1);
+    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+    cpu->stkp--;
+    write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+    cpu->stkp--;
+
+    set_flag(cpu, B, 1);
+    write(cpu, 0x0100 + cpu->stkp, cpu->status);
+    cpu->stkp--;
+    set_flag(cpu, B, 0);
+
+    cpu->pc = (u_int16_t)read(cpu, 0xFFFE) | ((u_int16_t)read(cpu, 0xFFFF) << 8);
+    return 0;
+}
+
+u_int8_t BVC(CPU6502* cpu){
+    if(get_flag(cpu, V) == 0){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t BVS(CPU6502* cpu){
+    if(get_flag(cpu, V) == 1){
+        cpu->cycles++;
+        cpu->addr_abs = cpu->pc + cpu->addr_rel;
+
+        if((cpu->addr_abs & HIGH_BIT_MASK) != (cpu->pc & HIGH_BIT_MASK)){
+            cpu->cycles++;
+        }
+        cpu->pc = cpu->addr_abs;
+    }
+    return 0;
+}
+
+u_int8_t CLC(CPU6502* cpu){
+    set_flag(cpu, C, false);
+    return 0;
+}
+
+u_int8_t CLD(CPU6502* cpu){
+    set_flag(cpu, D, false);
+    return 0;
+}
+
+u_int8_t CLI(CPU6502* cpu){
+    set_flag(cpu, I, false);
+    return 0;
+}
+
+u_int8_t CLV(CPU6502* cpu){
+    set_flag(cpu, V, false);
+    return 0;
+}
+
+u_int8_t CMP(CPU6502* cpu){
+    fetch(cpu);
+
+    cpu->temp = (u_int16_t)cpu->a - (u_int16_t)cpu->fetched;
+
+    set_flag(cpu, C, cpu->a >= cpu->fetched);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+    return 1;
+}
+
+u_int8_t CPX(CPU6502* cpu) {
+    fetch(cpu);
+
+    cpu->temp = (u_int16_t)cpu->x - (u_int16_t)cpu->fetched;
+
+    set_flag(cpu, C, cpu->x >= cpu->fetched);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+    return 0;
+}
+
+u_int8_t CPY(CPU6502* cpu) {
+    fetch(cpu);
+
+    cpu->temp = (u_int16_t)cpu->y - (u_int16_t)cpu->fetched;
+
+    set_flag(cpu, C, cpu->y >= cpu->fetched);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+    return 0;
+}
+
+u_int8_t DEC(CPU6502* cpu) {
+    fetch(cpu);
+
+    cpu->temp = cpu->fetched - 1;
+    write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+    return 0;
+}
+
+u_int8_t DEX(CPU6502* cpu){
+    cpu->x--;
+
+    set_flag(cpu, Z, cpu->x == ZERO);
+    set_flag(cpu, N, cpu->x & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t DEY(CPU6502* cpu){
+    cpu->y--;
+
+    set_flag(cpu, Z, cpu->y == ZERO);
+    set_flag(cpu, N, cpu->y & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t EOR(CPU6502* cpu){
+    fetch(cpu);
+
+    cpu->a = cpu->a ^ cpu->fetched;
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 1;
+}
+
+u_int8_t INC(CPU6502* cpu) {
+    fetch(cpu);
+    cpu->temp = cpu->fetched + 1;
+
+    write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+    return 0;
+}
+
+u_int8_t INX(CPU6502* cpu){
+    cpu->x++;
+
+    set_flag(cpu, Z, cpu->x == ZERO);
+    set_flag(cpu, N, cpu->x & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t INY(CPU6502* cpu){
+    cpu->y++;
+
+    set_flag(cpu, Z, cpu->y == ZERO);
+    set_flag(cpu, N, cpu->y & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t JMP(CPU6502* cpu){
+    cpu->pc = cpu->addr_abs;
+    return 0;
+}
+
+u_int8_t JSR(CPU6502* cpu) {
+    cpu->pc--;
+
+    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+    cpu->stkp--;
+    write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+    cpu->stkp--;
+
+    cpu->pc = cpu->addr_abs;
+    return 0;
+}
+
+u_int8_t LDA(CPU6502* cpu){
+    fetch(cpu);
+    cpu->a = cpu->fetched;
+
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 1;
+}
+
+u_int8_t LDX(CPU6502* cpu) {
+    fetch(cpu);
+    cpu->x = cpu->fetched;
+
+    set_flag(cpu, Z, cpu->x == ZERO);
+    set_flag(cpu, N, cpu->x & SIGN_MASK);
+    return 1;
+}
+
+u_int8_t LDY(CPU6502* cpu) {
+    fetch(cpu);
+    cpu->y = cpu->fetched;
+
+    set_flag(cpu, Z, cpu->y == ZERO);
+    set_flag(cpu, N, cpu->y & SIGN_MASK);
+    return 1;
+}
+
+u_int8_t LSR(CPU6502* cpu){
+    fetch(cpu);
+    set_flag(cpu, C, cpu->fetched & 0x0001);
+
+    cpu->temp = cpu->fetched >> 1;
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+
+    if(cpu->lookup[cpu->opcode].addr_mode == IMP){
+        cpu->a = cpu->temp & LOW_BIT_MASK;
+    }
+    else{
+        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    }
+    return 0;
+}
+
+u_int8_t NOP(CPU6502* cpu) {
+    //There are a LOT of possible NOPs, and it changes per ROM, so more will probably be added.
+    switch(cpu->opcode){
+        case 0x1C:
+        case 0x3C:
+        case 0x5C:
+        case 0x7C:
+        case 0xDC:
+        case 0xFC:
+            return 1;
+    }
+    return 0;
+}
+
+u_int8_t ORA(CPU6502* cpu){
+    fetch(cpu);
+    cpu->a = cpu->a | cpu->fetched;
+
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 1;
+}
+
+u_int8_t PHA(CPU6502* cpu){
+    write(cpu, 0x0100 + cpu->stkp, cpu->a);
+    cpu->stkp--;
+    return 0;
+}
+
+u_int8_t PHP(CPU6502* cpu) {
+    write(cpu, 0x0100 + cpu->stkp, cpu->status | B | U);
+
+    set_flag(cpu, B, 0);
+    set_flag(cpu, U, 0);
+    cpu->stkp--;
+    return 0;
+}
+
+u_int8_t PLA(CPU6502* cpu) {
+    cpu->stkp++;
+    cpu->a = read(cpu, 0x0100 + cpu->stkp);
+
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t PLP(CPU6502* cpu) {
+    cpu->stkp++;
+    cpu->status = read(cpu, 0x0100 + cpu->stkp);
+
+    set_flag(cpu, U, 1);
+    return 0;
+}
+
+u_int8_t ROL(CPU6502* cpu) {
+    fetch(cpu);
+    cpu->temp = (u_int16_t)(cpu->fetched << 1) | get_flag(cpu, C);
+
+    set_flag(cpu, C, cpu->temp & HIGH_BIT_MASK);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+
+    if(cpu->lookup[cpu->opcode].addr_mode == IMP){
+        cpu->a = cpu->temp & LOW_BIT_MASK;
+    }
+    else{
+        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    }
+    return 0;
+}
+
+u_int8_t ROR(CPU6502* cpu) {
+    fetch(cpu);
+    cpu->temp = (u_int16_t)(get_flag(cpu, C) << 7) | (cpu->fetched >> 1);
+
+    set_flag(cpu, C, cpu->fetched & 0x01);
+    set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == ZERO);
+    set_flag(cpu, N, cpu->temp & 0x0080);
+
+    if(cpu->lookup[cpu->opcode].addr_mode == IMP){
+        cpu->a = cpu->temp & LOW_BIT_MASK;
+    }
+    else{
+        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    }
+    return 0;
+}
+
+u_int8_t RTI(CPU6502* cpu) {
+    cpu->stkp++;
+
+    cpu->status = read(cpu, 0x0100 + cpu->stkp);
+    cpu->status &= ~B;
+    cpu->status &= ~U;
+
+    cpu->stkp++;
+    cpu->pc = (u_int16_t)read(cpu, 0x0100 + cpu->stkp);
+    cpu->stkp++;
+    cpu->pc |= (u_int16_t)read(cpu, 0x0100 + cpu->stkp) << 8;
+
+    return 0;
+}
+
+u_int8_t RTS(CPU6502* cpu) {
+    cpu->stkp++;
+    cpu->pc = (u_int16_t)read(cpu, 0x0100 + cpu->stkp);
+    cpu->stkp++;
+    cpu->pc |= (u_int16_t)read(cpu, 0x0100 + cpu->stkp) << 8;
+
+    cpu->pc++;
+    return 0;
+}
+
+u_int8_t SEC(CPU6502* cpu){
+    set_flag(cpu, C, true);
+    return 0;
+}
+
+u_int8_t SED(CPU6502* cpu){
+    set_flag(cpu, D, true);
+    return 0;
+}
+
+u_int8_t SEI(CPU6502* cpu){
+    set_flag(cpu, I, true);
+    return 0;
+}
+
+u_int8_t STA(CPU6502* cpu) {
+    write(cpu, cpu->addr_abs, cpu->a);
+    return 0;
+}
+
+u_int8_t STX(CPU6502* cpu) {
+    write(cpu, cpu->addr_abs, cpu->x);
+    return 0;
+}
+
+u_int8_t STY(CPU6502* cpu) {
+    write(cpu, cpu->addr_abs, cpu->y);
+    return 0;
+}
+
+u_int8_t TAX(CPU6502* cpu) {
+    cpu->x = cpu->a;
+
+    set_flag(cpu, Z, cpu->x == ZERO);
+    set_flag(cpu, N, cpu->x & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t TAY(CPU6502* cpu) {
+    cpu->y = cpu->a;
+
+    set_flag(cpu, Z, cpu->y == ZERO);
+    set_flag(cpu, N, cpu->y & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t TSX(CPU6502* cpu) {
+    cpu->x = cpu->stkp;
+
+    set_flag(cpu, Z, cpu->x == ZERO);
+    set_flag(cpu, N, cpu->x & SIGN_MASK);
+
+    return 0;
+}
+
+u_int8_t TXA(CPU6502* cpu) {
+    cpu->a = cpu->x;
+
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t TXS(CPU6502* cpu) {
+    cpu->stkp = cpu->x;
+    return 0;
+}
+
+u_int8_t TYA(CPU6502* cpu) {
+    cpu->a = cpu->y;
+
+    set_flag(cpu, Z, cpu->a == ZERO);
+    set_flag(cpu, N, cpu->a & SIGN_MASK);
+    return 0;
+}
+
+u_int8_t XXX(CPU6502* cpu){
     return 0;
 }

@@ -3,8 +3,13 @@
 
 #define UNITIALIZED 0x0000
 #define INVALID 0x0000
+#define ZERO 0x00
+
 #define MIN_ADDRESS 0x0000
 #define MAX_ADDRESS 0xFFFF
+#define LOW_BIT_MASK 0x00FF
+#define HIGH_BIT_MASK 0xFF00
+#define SIGN_MASK 0x80
 #define RAM_SIZE 64 * 1024 //~64K
 #define OPCODES 256
 

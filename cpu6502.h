@@ -221,64 +221,309 @@ u_int8_t IZY(CPU6502* cpu);
  * These functions will return 0 if no extra cycles are needed, 1 if more are needed (may be refactored to use bool).
  */
 
+/**
+ * Branch if not equal
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BNE(CPU6502* cpu);
+/**
+ * Add to the accumulator
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t ADC(CPU6502* cpu);
+/**
+ * Clear Overflow Flag
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CLV(CPU6502* cpu);
+/**
+ * Branch if Carry Set
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BCS(CPU6502* cpu);
+/**
+ * Decrement Value at Memory Location
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t DEC(CPU6502* cpu);
+/**
+ * Increment Value at Memory Location
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t INC(CPU6502* cpu);
+/**
+ * Branch if Overflow Set
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BVS(CPU6502* cpu);
+/**
+ * Jump to Subroutine
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t JSR(CPU6502* cpu);
 u_int8_t LSR(CPU6502* cpu);
+/**
+ * Push Status Register to Stack
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t PHP(CPU6502* cpu);
 u_int8_t ROR(CPU6502* cpu);
+/**
+ * Set Carry Flag
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t SEC(CPU6502* cpu);
+/**
+ * Store X Register at Address
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t STX(CPU6502* cpu);
+/**
+ * Transfer Stack Pointer to X Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t TSX(CPU6502* cpu);
+/**
+ * Branch if positive
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BPL(CPU6502* cpu);
+/**
+ * Bitwise AND on accumulator and fetched
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t AND(CPU6502* cpu);
+/**
+ * Compare Accumulator to Fetched
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CMP(CPU6502* cpu);
+/**
+ * Branch if equal
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BEQ(CPU6502* cpu);
+/**
+ * Decrement X Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t DEX(CPU6502* cpu);
+/**
+ * Increment X Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t INX(CPU6502* cpu);
+/**
+ * Clear Carry Flag
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CLC(CPU6502* cpu);
+/**
+ * Load into the Accumulator
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t LDA(CPU6502* cpu);
+/**
+ * Blank Instruction - No Operation
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t NOP(CPU6502* cpu);
+/**
+ * Pop Accumulator off Stack
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t PLA(CPU6502* cpu);
 u_int8_t RTI(CPU6502* cpu);
+/**
+ * Set Decimal Flag
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t SED(CPU6502* cpu);
+/**
+ * Store Y Register at Address
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t STY(CPU6502* cpu);
+/**
+ * Transfer X Register to Accumulator
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t TXA(CPU6502* cpu);
+/**
+ * Break Program to service interrupt
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BRK(CPU6502* cpu);
+/**
+ * Arithmetic Shift Left
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t ASL(CPU6502* cpu);
+/**
+ * Compare X Register to Fetched
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CPX(CPU6502* cpu);
 u_int8_t BIT(CPU6502* cpu);
+/**
+ * Decrement Y Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t DEY(CPU6502* cpu);
+/**
+ * Increment Y Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t INY(CPU6502* cpu);
+/**
+ * Clear Decimal Flag
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CLD(CPU6502* cpu);
+/**
+ * Load into X register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t LDX(CPU6502* cpu);
+/**
+ * Bitwise OR on Accumulator and Fetched
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t ORA(CPU6502* cpu);
+/**
+ * Pop Status Register off Stack
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t PLP(CPU6502* cpu);
 u_int8_t RTS(CPU6502* cpu);
 u_int8_t SEI(CPU6502* cpu);
+/**
+ * Transfer Accumulator to X Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t TAX(CPU6502* cpu);
+/**
+ * Transfer X Register to Stack Pointer
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t TXS(CPU6502* cpu);
+/**
+ * Branch if Overflow clear
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BVC(CPU6502* cpu);
+/**
+ * Branch if Carry Clear
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BCC(CPU6502* cpu);
+/**
+ * Compare Y Register to Fetched
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CPY(CPU6502* cpu);
+/**
+ * Branch if negative
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t BMI(CPU6502* cpu);
 u_int8_t EOR(CPU6502* cpu);
+/**
+ * Jump to Memory Location
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t JMP(CPU6502* cpu);
+/**
+ * Clear Interrupt Flag (Disable Interrupts)
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t CLI(CPU6502* cpu);
+/**
+ * Load into Y Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t LDY(CPU6502* cpu);
+/**
+ * Push Accumulator to Stack
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t PHA(CPU6502* cpu);
 u_int8_t ROL(CPU6502* cpu);
+/**
+ * Subtract to the accumulator
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t SBC(CPU6502* cpu);
+/**
+ * Store Accumulator at Address
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t STA(CPU6502* cpu);
+/**
+ * Transfer Accumulator to Y Register
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t TAY(CPU6502* cpu);
+/**
+ * Transfer Y Register to Accumulator
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
 u_int8_t TYA(CPU6502* cpu);
 
-u_int8_t XXX(CPU6502* cpu); //Invalid opcode, basically a NOP
+/**
+ * Invalid opcode, basically a NOP
+ * @param cpu 6502 CPU
+ * @return 0 if no more cycles are needed, 1 if more cycles are needed
+ */
+u_int8_t XXX(CPU6502* cpu);
 
 
 #endif //NESEMULATOR_CPU6502_H
