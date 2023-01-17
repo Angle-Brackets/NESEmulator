@@ -1,9 +1,6 @@
 #include "cpu6502.h"
 #include <string.h>
 
-//This is the CPU we will be using.
-extern CPU6502 cpu6502;
-
 static const struct INSTRUCTION INSTRUCTIONS[] = {
         { "BRK", BRK, IMM, 7 },{ "ORA", ORA, IZX, 6 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 3 },{ "ORA", ORA, ZP0, 3 },{ "ASL", ASL, ZP0, 5 },{ "???", XXX, IMP, 5 },{ "PHP", PHP, IMP, 3 },{ "ORA", ORA, IMM, 2 },{ "ASL", ASL, IMP, 2 },{ "???", XXX, IMP, 2 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ABS, 4 },{ "ASL", ASL, ABS, 6 },{ "???", XXX, IMP, 6 },
         { "BPL", BPL, REL, 2 },{ "ORA", ORA, IZY, 5 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ZPX, 4 },{ "ASL", ASL, ZPX, 6 },{ "???", XXX, IMP, 6 },{ "CLC", CLC, IMP, 2 },{ "ORA", ORA, ABY, 4 },{ "???", NOP, IMP, 2 },{ "???", XXX, IMP, 7 },{ "???", NOP, IMP, 4 },{ "ORA", ORA, ABX, 4 },{ "ASL", ASL, ABX, 7 },{ "???", XXX, IMP, 7 },
@@ -23,8 +20,7 @@ static const struct INSTRUCTION INSTRUCTIONS[] = {
         { "BEQ", BEQ, REL, 2 },{ "SBC", SBC, IZY, 5 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 4 },{ "SBC", SBC, ZPX, 4 },{ "INC", INC, ZPX, 6 },{ "???", XXX, IMP, 6 },{ "SED", SED, IMP, 2 },{ "SBC", SBC, ABY, 4 },{ "NOP", NOP, IMP, 2 },{ "???", XXX, IMP, 7 },{ "???", NOP, IMP, 4 },{ "SBC", SBC, ABX, 4 },{ "INC", INC, ABX, 7 },{ "???", XXX, IMP, 7 }
 };
 
-void initialize(CPU6502* cpu) {
-    memcpy(cpu->lookup, INSTRUCTIONS, sizeof(INSTRUCTION) * OPCODES);
+void initialize_cpu(CPU6502* cpu) {
     //Initialize CPU
     *cpu = (CPU6502){
         .a = UNITIALIZED,
@@ -43,6 +39,8 @@ void initialize(CPU6502* cpu) {
         .cycles = UNITIALIZED,
         .clock_count = UNITIALIZED
     };
+
+    memcpy(cpu->lookup, INSTRUCTIONS, sizeof(INSTRUCTION) * OPCODES);
 }
 
 u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {
@@ -57,14 +55,14 @@ void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v) {
 }
 
 void write(CPU6502* cpu, u_int16_t addr, u_int8_t data){
-    b_write(cpu->bus, addr, data);
+    bus_cpu_write(cpu->bus, addr, data);
 }
 
 u_int8_t read(CPU6502* cpu, u_int16_t addr){
-    return b_read(cpu->bus, addr, false);
+    return bus_cpu_read(cpu->bus, addr, false);
 }
 
-void reset(CPU6502* cpu){
+void cpu_reset(CPU6502* cpu){
     // Get the new address for PC
     cpu->addr_abs = 0xFFFC;
     u_int16_t low = read(cpu, cpu->addr_abs + 0);

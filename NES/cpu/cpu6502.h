@@ -1,7 +1,7 @@
 #ifndef NESEMULATOR_CPU6502_H
 #define NESEMULATOR_CPU6502_H
 
-#include "bus.h"
+#include "../memory/bus.h"
 
 //Forward Declaring this so we can avoid a circular logic error.
 typedef struct Bus Bus;
@@ -51,13 +51,13 @@ typedef struct CPU6502 {
  * Initializes the 6502 CPU passed
  * @param cpu 6502 CPU we're working with
  */
-void initialize(CPU6502* cpu);
+void initialize_cpu(CPU6502* cpu);
 
 /**
  * Resets the CPU into a known state
  * @param cpu 6502 CPU we're working with
  */
-void reset(CPU6502* cpu);
+void cpu_reset(CPU6502* cpu);
 
 /**
  * Interrupt Request to execute code a specific region

@@ -3,4 +3,22 @@ project(NESEmulator C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(NESEmulator main.c bus.c bus.h cpu6502.c cpu6502.h emuconsts.h)
+include_directories(include/)
+include_directories("${CMAKE_SOURCE_DIR}/libs/libPixelinator.a")
+find_package(SDL2 REQUIRED COMPONENTS SDL2)
+find_package(SDL2_mixer REQUIRED)
+find_package(SDL2_image REQUIRED)
+
+if(THREADS_HAVE_PTHREAD_ARG)
+    target_compile_options(NESEmulator PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+    target_link_libraries(NESEmulator "${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-OFast")
+
+add_executable(NESEmulator main.c NES/memory/bus.c NES/memory/bus.h NES/cpu/cpu6502.c NES/cpu/cpu6502.h NES/emuconsts.h NES/ppu/ppu2C02.h NES/ppu/ppu2C02.c NES/memory/cartridge.c NES/memory/cartridge.h NES/mappers/mapper.c NES/mappers/mapper.h NES/mappers/custom_mappers/mapper_000.c NES/mappers/custom_mappers/mapper_000.h)
+target_link_libraries(NESEmulator ${CMAKE_SOURCE_DIR}/libs/libPixelinator.a SDL2::SDL2 SDL2_mixer::SDL2_mixer SDL2_image::SDL2_image)
