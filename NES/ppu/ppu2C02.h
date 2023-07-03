@@ -3,8 +3,10 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <SDL2/SDL.h>
 
 #include "../memory/cartridge.h"
+#include "graphics/sprite.h"
 
 //Addresses that the PPU can read from through the CPU
 #define CONTROL 0x0000
@@ -22,7 +24,19 @@ typedef struct PPU2C02 {
     //PPU memory
     u_int8_t tblName[2][1024]; //VRAM nametable information
     u_int8_t tblPalette[32]; //Palette Memory
+    SDL_Color palette[0x40]; //Palette of NES
+    sprite_t* sprite_screen; //Full screen output
+
+    //Debug Information
+    bool frame_complete;
+    int16_t cycle;
+    int16_t scanline;
 } PPU2C02;
+
+/**
+ * Initializes the PPU
+ */
+PPU2C02* initialize_ppu();
 
 /**
  * Communicates with the main bus to read bytes through the PPU
@@ -57,11 +71,11 @@ void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data);
  * Connects the cartridge to the PPU
  * @param cartridge
  */
-void ppu_connect_cartridge(PPU2C02* ppu, const Cartridge* cartridge);
+void ppu_connect_cartridge(PPU2C02* ppu, Cartridge* cartridge);
 
 /**
- * Performs a system tick on the PPU
+ * Performs a system clock on the PPU
  */
-void ppu_tick(PPU2C02* ppu);
+void ppu_clock(PPU2C02* ppu);
 
 #endif //NESEMULATOR_PPU2C02_H

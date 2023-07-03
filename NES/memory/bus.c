@@ -33,16 +33,25 @@ u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly){
     return data;
 }
 
-void insert_cartridge(Bus* bus, const Cartridge *cartridge) {
+void insert_cartridge(Bus* bus, Cartridge* cartridge) {
+    bus->cpu = initialize_cpu(bus);
+    bus->ppu = initialize_ppu();
     bus->cart = cartridge;
+
     ppu_connect_cartridge(bus->ppu, cartridge);
 }
 
 void bus_reset(Bus* bus) {
     cpu_reset(bus->cpu);
-    bus->system_ticks = 0;
+    bus->system_clocks = 0;
 }
 
-void bus_tick(Bus* bus) {
+void bus_clock(Bus* bus) {
+    ppu_clock(bus->ppu);
 
+    if(bus->system_clocks % 3 == 0){
+        clock(bus->cpu);
+    }
+
+    bus->system_clocks++;
 }

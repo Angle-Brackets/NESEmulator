@@ -49,9 +49,8 @@ typedef struct CPU6502 {
 
 /**
  * Initializes the 6502 CPU passed
- * @param cpu 6502 CPU we're working with
  */
-void initialize_cpu(CPU6502* cpu);
+CPU6502* initialize_cpu(Bus* bus);
 
 /**
  * Resets the CPU into a known state

@@ -20,7 +20,9 @@ static const struct INSTRUCTION INSTRUCTIONS[] = {
         { "BEQ", BEQ, REL, 2 },{ "SBC", SBC, IZY, 5 },{ "???", XXX, IMP, 2 },{ "???", XXX, IMP, 8 },{ "???", NOP, IMP, 4 },{ "SBC", SBC, ZPX, 4 },{ "INC", INC, ZPX, 6 },{ "???", XXX, IMP, 6 },{ "SED", SED, IMP, 2 },{ "SBC", SBC, ABY, 4 },{ "NOP", NOP, IMP, 2 },{ "???", XXX, IMP, 7 },{ "???", NOP, IMP, 4 },{ "SBC", SBC, ABX, 4 },{ "INC", INC, ABX, 7 },{ "???", XXX, IMP, 7 }
 };
 
-void initialize_cpu(CPU6502* cpu) {
+CPU6502* initialize_cpu(Bus* bus){
+    CPU6502* cpu = malloc(sizeof(CPU6502));
+
     //Initialize CPU
     *cpu = (CPU6502){
         .a = UNITIALIZED,
@@ -29,7 +31,7 @@ void initialize_cpu(CPU6502* cpu) {
         .stkp = UNITIALIZED,
         .pc = UNITIALIZED,
         .status = UNITIALIZED,
-        .bus = NULL,
+        .bus = bus,
 
         .fetched = UNITIALIZED,
         .temp = UNITIALIZED,
@@ -41,6 +43,8 @@ void initialize_cpu(CPU6502* cpu) {
     };
 
     memcpy(cpu->lookup, INSTRUCTIONS, sizeof(INSTRUCTION) * OPCODES);
+
+    return cpu;
 }
 
 u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {

@@ -21,7 +21,7 @@ typedef struct Bus {
     Cartridge* cart;
 
     u_int8_t cpu_ram[RAM_SIZE];
-    u_int32_t system_ticks; //Number of ticks the system has gone through
+    u_int32_t system_clocks; //Number of clocks the system has gone through
 } Bus;
 
 //General Bus Operations
@@ -54,7 +54,7 @@ u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly);
  * Inserts a cartridge into ROM
  * @param cartridge cartridge that was inputted.
  */
-void insert_cartridge(Bus* bus, const Cartridge* cartridge);
+void insert_cartridge(Bus* bus, Cartridge* cartridge);
 
 /**
  * Resets the console
@@ -62,9 +62,9 @@ void insert_cartridge(Bus* bus, const Cartridge* cartridge);
 void bus_reset(Bus* bus);
 
 /**
- * Runs one system bus_tick of the console.
+ * Runs one system clock of the console.
  */
-void bus_tick(Bus* bus);
+void bus_clock(Bus* bus);
 
 
 #endif
