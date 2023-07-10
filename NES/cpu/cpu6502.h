@@ -524,5 +524,7 @@ u_int8_t TYA(CPU6502* cpu);
  */
 u_int8_t XXX(CPU6502* cpu);
 
+void disassemble(CPU6502* cpu, uint16_t start, uint16_t stop);
+
 
 #endif //NESEMULATOR_CPU6502_H

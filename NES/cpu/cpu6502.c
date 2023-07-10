@@ -84,10 +84,10 @@ void cpu_reset(CPU6502* cpu){
 
     //Clear helper variables
     cpu->addr_rel = UNITIALIZED;
-    cpu->addr_rel = UNITIALIZED;
+    cpu->addr_abs = UNITIALIZED;
     cpu->fetched = UNITIALIZED;
 
-    cpu->cycles = 0;
+    cpu->cycles = 8;
 }
 
 void irq(CPU6502* cpu){
@@ -117,9 +117,9 @@ void irq(CPU6502* cpu){
 
 void nmi(CPU6502 *cpu) {
     //Similar affair to above, but this interrupt can't be ignored.
-    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0xFF);
+    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
     cpu->stkp--;
-    write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0xFF);
+    write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
     cpu->stkp--;
 
     //Write status to stack
@@ -156,13 +156,13 @@ void clock(CPU6502* cpu){
         cpu->cycles = cpu->lookup[cpu->opcode].cycles;
 
         //Grab the immediate data using the requisite addressing mode
-        u_int8_t cycle1 = (*cpu->lookup[cpu->opcode].addr_mode)(cpu);
+        u_int8_t cycle1 = (cpu->lookup[cpu->opcode].addr_mode)(cpu);
 
         //Perform Operation
-        u_int8_t cycle2 = (*cpu->lookup[cpu->opcode].operation)(cpu);
+        u_int8_t cycle2 = (cpu->lookup[cpu->opcode].operation)(cpu);
 
         //Number of cycles might have been altered by the instruction (page swapping for example)
-        cpu->cycles += cycle1 + cycle2;
+        cpu->cycles += (cycle1 & cycle2);
         set_flag(cpu, U, 1);
     }
 
@@ -324,15 +324,15 @@ u_int8_t ADC(CPU6502* cpu){
     cpu->temp = (u_int16_t)cpu->a + (u_int16_t)cpu->fetched + (u_int16_t)get_flag(cpu, C);
 
     //Carry bit is set if the sum we generate is over 256
-    set_flag(cpu, C, cpu->temp > 256);
+    set_flag(cpu, C, cpu->temp > 255);
 
     //The zero flag is set if the sum is zero
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0);
 
     //The overflow flag is set based on some possible conditions.
     //If the sum is Positive + Positive = Negative or Negative + Negative = Positive
-    //We can be sure that an overflow occured, and that is what this expression captures.
-    set_flag(cpu, V, (~((u_int16_t)cpu->a ^ (u_int16_t)cpu->fetched) & ((u_int16_t)cpu->a ^ (u_int16_t)cpu->temp)) & 0x0080);
+    //We can be sure that an overflow occurred, and that is what this expression captures.
+    set_flag(cpu, V, (~((uint16_t)cpu->a ^ (uint16_t)cpu->fetched) & ((uint16_t)cpu->a ^ (uint16_t)cpu->temp)) & 0x0080);
 
     //We look at the left-most bit to decide if it is negative (1 = negative)
     set_flag(cpu, N, cpu->temp & SIGN_MASK);
@@ -346,15 +346,15 @@ u_int8_t ADC(CPU6502* cpu){
 u_int8_t SBC(CPU6502* cpu){
     fetch(cpu);
 
-    u_int16_t value = ((u_int16_t)cpu->fetched ^ LOW_BIT_MASK);
+    u_int16_t value = ((u_int16_t)cpu->fetched) ^ LOW_BIT_MASK;
 
     //Now everything is the same as addition due to math!
     cpu->temp = (u_int16_t)cpu->a + (u_int16_t)value + (u_int16_t)get_flag(cpu, C);
 
-    set_flag(cpu, C, cpu->temp > 256);
+    set_flag(cpu, C, cpu->temp & HIGH_BIT_MASK);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0);
-    set_flag(cpu, V, (~((u_int16_t)cpu->a ^ (u_int16_t)cpu->fetched) & ((u_int16_t)cpu->a ^ (u_int16_t)cpu->temp)) & 0x0080);
-    set_flag(cpu, N, cpu->temp & SIGN_MASK);
+    set_flag(cpu, V, (cpu->temp ^ (uint16_t)cpu->a) & (cpu->temp ^ value) & 0x0080);
+    set_flag(cpu, N, cpu->temp & 0x0080);
     cpu->a = cpu->temp & LOW_BIT_MASK;
 
     return 1;
@@ -885,4 +885,102 @@ u_int8_t TYA(CPU6502* cpu) {
 
 u_int8_t XXX(CPU6502* cpu){
     return 0;
+}
+
+static char* hex(uint32_t n, uint8_t d){
+    char* res = (char*)malloc(sizeof(char) * (d+1));
+    for(int32_t i = d - 1; i >= 0; i--, n >>= 4){
+        res[i] = "0123456789ABCDEF"[n & 0xF];
+    }
+    res[d] = '\0';
+    return res;
+}
+
+void disassemble(CPU6502* cpu, uint16_t start, uint16_t stop){
+    uint32_t addr = start;
+    uint8_t value = 0x00;
+    uint8_t low = 0x00;
+    uint8_t high = 0x00;
+    uint16_t line_addr = 0;
+
+    while(addr <= (uint32_t)stop){
+        line_addr = addr;
+        printf("$%s:", hex(addr, 4));
+        uint8_t opcode = bus_cpu_read(cpu->bus, addr, true);
+        addr++;
+        printf("%s ", cpu->lookup[opcode].name);
+
+        if(cpu->lookup[opcode].addr_mode == IMP){
+            printf(" {IMP}");
+        }
+        else if(cpu->lookup[opcode].addr_mode == IMM){
+            value = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            printf("#$%s {IMM}", hex(value, 2));
+        }
+        else if(cpu->lookup[opcode].addr_mode == ZP0){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = 0x00;
+            printf("$%s {ZP0}", hex(low, 2));
+        }
+        else if(cpu->lookup[opcode].addr_mode == ZPX){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = 0x00;
+            printf("$%s, X {ZPX}", hex(low, 2));
+        }
+        else if(cpu->lookup[opcode].addr_mode == ZPY){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = 0x00;
+            printf("$%s, Y {ZPY}", hex(low, 2));
+        }
+        else if(cpu->lookup[opcode].addr_mode == IZX){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = 0x00;
+            printf("$%s, X {IZX}", hex(low, 2));
+        }
+        else if(cpu->lookup[opcode].addr_mode == IZY){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = 0x00;
+            printf("($%s), Y {IZY}", hex(low, 2));
+        }
+        else if(cpu->lookup[opcode].addr_mode == ABS){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            printf("$%s {ABS}", hex((uint16_t)(high << 8) | low, 4));
+        }
+        else if(cpu->lookup[opcode].addr_mode == ABX){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            printf("$%s, X {ABX}", hex((uint16_t)(high << 8) | low, 4));
+        }
+        else if(cpu->lookup[opcode].addr_mode == ABY){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            printf("$%s, Y {ABY}", hex((uint16_t)(high << 8) | low, 4));
+        }
+        else if(cpu->lookup[opcode].addr_mode == IND){
+            low = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            high = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            printf("($%s) {IND}", hex((uint16_t)(high << 8) | low, 4));
+        }
+        else if(cpu->lookup[opcode].addr_mode == REL){
+            value = bus_cpu_read(cpu->bus, addr, true);
+            addr++;
+            printf("$%s [$%s] {REL}", hex(value, 2), hex(addr + (int8_t)value, 4));
+        }
+        printf("\n");
+    }
 }

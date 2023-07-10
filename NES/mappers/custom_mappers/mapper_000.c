@@ -11,6 +11,7 @@ bool mapper000_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
 
 bool mapper000_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
     if(addr >= 0x8000 && addr <= 0xFFFF){
+        *mapped_addr = addr & (mapper->prg_banks > 1 ? 0x7FFF : 0x3FFF);
         return true;
     }
 
@@ -27,9 +28,12 @@ bool mapper_000_ppu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr)
 }
 
 bool mapper_000_ppu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
-//    if(addr >= 0x0000 && addr <= 0x1FFF){
-//        return true;
-//    }
+    if(addr >= 0x0000 && addr <= 0x1FFF){
+        if(mapper->chr_banks == 0){
+            *mapped_addr = addr;
+            return true;
+        }
+    }
 
     return false;
 }

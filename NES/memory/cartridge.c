@@ -23,28 +23,29 @@ void initialize_cartridge(Cartridge* cart, const char* file) {
         exit(1);
     }
 
-
-    struct Header* header_buffer = (struct Header*) malloc(sizeof(struct Header));
-    fread((char*)header_buffer, sizeof(char), sizeof(struct Header), fp);
+    struct Header header;
+    fread(&header, sizeof(struct Header), 1, fp);
 
     //Some training information for the rom that can be ignored.
-    if (header_buffer->mapper1 & 0x04)
+    if(header.mapper1 & 0x04)
         fseek(fp, 512, SEEK_CUR);
 
-    cart->mapperID = ((header_buffer->mapper2 >> 4) << 4) | (header_buffer->mapper1 >> 4);
+    cart->mapperID = ((header.mapper2 >> 4) << 4) | (header.mapper1 >> 4);
 
     //Get the file format (We are skipping 0 and 2 for now)
+    cart->nMapperID = ((header.mapper2 >> 4) << 4) | (header.mapper1 >> 4);
+    cart->mirror = (header.mapper1 & 0x01) ? VERTICAL : HORIZONTAL;
     uint8_t file_type_num = 1;
 
     if (file_type_num == 0) {}
     else if (file_type_num == 1) {
-        cart->prg_banks = header_buffer->prg_rom_chunks;
-        cart->prg_memory = malloc(cart->prg_banks * PRG_BANK_SIZE);
-        fread((char*)cart->prg_memory, sizeof(char), cart->prg_banks * PRG_BANK_SIZE, fp);
+        cart->prg_banks = header.prg_rom_chunks;
+        cart->prg_memory = (uint8_t*)malloc(cart->prg_banks * 16384);
+        fread(cart->prg_memory, 16384, cart->prg_banks, fp);
 
-        cart->chr_banks = header_buffer->chr_rom_chunks;
-        cart->chr_memory = malloc(cart->chr_banks * CHR_BANK_SIZE);
-        fread((char*)cart->chr_memory, sizeof(char), cart->chr_banks * CHR_BANK_SIZE, fp);
+        cart->chr_banks = header.chr_rom_chunks;
+        cart->chr_memory = (uint8_t*)malloc(cart->chr_banks * 8192);
+        fread(cart->chr_memory, 8192, cart->chr_banks, fp);
     } else {}
 
     //Load up our mapper according to the ID
@@ -58,7 +59,7 @@ void initialize_cartridge(Cartridge* cart, const char* file) {
     fclose(fp);
 }
 
-bool cart_read_cpu(Cartridge* cart, uint8_t addr, uint8_t* data) {
+bool cart_read_cpu(Cartridge* cart, uint16_t addr, uint8_t* data) {
     uint32_t mapped_addr = 0;
     if(cart->mapper.mapper_cpu_read(&cart->mapper, addr, &mapped_addr)){
         *data = cart->prg_memory[mapped_addr];
@@ -68,7 +69,7 @@ bool cart_read_cpu(Cartridge* cart, uint8_t addr, uint8_t* data) {
     return false;
 }
 
-bool cart_write_cpu(Cartridge* cart, uint8_t addr, uint8_t data) {
+bool cart_write_cpu(Cartridge* cart, uint16_t addr, uint8_t data) {
     uint32_t mapped_addr = 0;
     if(cart->mapper.mapper_cpu_write(&cart->mapper, addr, &mapped_addr)){
         cart->prg_memory[mapped_addr] = data;
@@ -78,7 +79,7 @@ bool cart_write_cpu(Cartridge* cart, uint8_t addr, uint8_t data) {
     return false;
 }
 
-bool cart_read_ppu(Cartridge* cart, uint8_t addr, uint8_t* data) {
+bool cart_read_ppu(Cartridge* cart, uint16_t addr, uint8_t* data) {
     uint32_t mapped_addr = 0;
     if(cart->mapper.mapper_ppu_read(&cart->mapper, addr, &mapped_addr)){
         *data = cart->chr_memory[mapped_addr];
@@ -88,7 +89,7 @@ bool cart_read_ppu(Cartridge* cart, uint8_t addr, uint8_t* data) {
     return false;
 }
 
-bool cart_write_ppu(Cartridge* cart, uint8_t addr, uint8_t data) {
+bool cart_write_ppu(Cartridge* cart, uint16_t addr, uint8_t data) {
     uint32_t mapped_addr = 0;
     if(cart->mapper.mapper_ppu_write(&cart->mapper, addr, &mapped_addr)){
         cart->chr_memory[mapped_addr] = data;

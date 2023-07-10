@@ -26,8 +26,8 @@ u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly){
     else if(addr >= MIN_ADDRESS_RAM && addr <= MAX_ADDRESS_RAM){
         data = bus->cpu_ram[addr & MIRROR_MASK_RAM];
     }
-    else if(addr >= MIN_ADDRESS_PPU && addr <= MAX_ADDRESS_PPU){
-        ppu_cpu_read(bus->ppu, addr & MIRROR_MASK_PPU, readOnly);
+    if(addr >= MIN_ADDRESS_PPU && addr <= MAX_ADDRESS_PPU){
+        data = ppu_cpu_read(bus->ppu, addr & MIRROR_MASK_PPU, readOnly);
     }
 
     return data;

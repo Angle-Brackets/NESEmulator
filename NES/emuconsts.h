@@ -5,6 +5,11 @@
 #define INVALID 0x0000
 #define ZERO 0x00
 
+#define WIDTH 750
+#define HEIGHT 750
+#define NES_WIDTH 256
+#define NES_HEIGHT 240
+
 #define MIN_ADDRESS_RAM 0x0000
 #define MAX_ADDRESS_RAM 0x1FFF
 #define MIRROR_MASK_RAM 0x07FF
@@ -12,6 +17,11 @@
 #define MIN_ADDRESS_PPU 0x2000
 #define MAX_ADDRESS_PPU 0x3FFF
 #define MIRROR_MASK_PPU 0x0007
+#define MAX_PATTERN_MEMORY 0x1FFF
+#define MIN_NAMETABLE_MEMORY 0x2000
+#define MAX_NAMETABLE_MEMORY 0x3EFF
+#define MIN_PALETTE_MEMORY 0x3F00
+#define MAX_PALETTE_MEMORY 0x3FFF
 
 #define LOW_BIT_MASK 0x00FF
 #define HIGH_BIT_MASK 0xFF00
@@ -26,8 +36,8 @@ enum FLAGS6502 {
     D = (1 << 3), //Decimal Mode (unused)
     B = (1 << 4), //Break
     U = (1 << 5), //Unused
-    V = (1 << 7), //Overflow
-    N = (1 << 8), //Negative
+    V = (1 << 6), //Overflow
+    N = (1 << 7), //Negative
 };
 
 #endif //NESEMULATOR_EMUCONSTS_H
