@@ -16,6 +16,9 @@ void bus_cpu_write(Bus* bus, u_int16_t addr, u_int8_t data){
     else if(addr >= MIN_ADDRESS_PPU && addr <= MAX_ADDRESS_PPU){
         ppu_cpu_write(bus->ppu, addr & MIRROR_MASK_PPU, data);
     }
+    else if(addr >= MIN_ADDRESS_CONTROLLER && addr <= MAX_ADDRESS_CONTROLLER){
+        bus->controller_state[addr & 0x0001] = bus->controller[addr & 0x0001];
+    }
 }
 
 u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly){
@@ -26,8 +29,12 @@ u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly){
     else if(addr >= MIN_ADDRESS_RAM && addr <= MAX_ADDRESS_RAM){
         data = bus->cpu_ram[addr & MIRROR_MASK_RAM];
     }
-    if(addr >= MIN_ADDRESS_PPU && addr <= MAX_ADDRESS_PPU){
+    else if(addr >= MIN_ADDRESS_PPU && addr <= MAX_ADDRESS_PPU){
         data = ppu_cpu_read(bus->ppu, addr & MIRROR_MASK_PPU, readOnly);
+    }
+    else if(addr >= MIN_ADDRESS_CONTROLLER && addr <= MAX_ADDRESS_CONTROLLER){
+        data = (bus->controller_state[addr & 0x0001] & 0x80) > 0;
+        bus->controller_state[addr & 0x0001] <<= 1;
     }
 
     return data;

@@ -20,6 +20,8 @@ typedef struct Bus {
     PPU2C02* ppu;
     Cartridge* cart;
 
+    uint8_t controller[2];
+    uint8_t controller_state[2];
     u_int8_t cpu_ram[RAM_SIZE];
     u_int32_t system_clocks; //Number of clocks the system has gone through
 } Bus;
