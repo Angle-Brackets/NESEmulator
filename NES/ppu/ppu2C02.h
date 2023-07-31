@@ -22,9 +22,9 @@ typedef struct PPU2C02 {
     Cartridge* cart;
 
     //PPU memory
-    u_int8_t tblName[2][1024]; //VRAM nametable information
+    uint8_t tblName[2][1024]; //VRAM nametable information
     uint8_t  tblPattern[2][4096];
-    u_int8_t tblPalette[32]; //Palette Memory
+    uint8_t tblPalette[32]; //Palette Memory
     SDL_Color palette[0x40]; //Palette of NES
     uint8_t address_latch; //Tells us when we're writing to the low or high byte
     uint8_t ppu_data_buffer; //Buffered byte from reading from PPU

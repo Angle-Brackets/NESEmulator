@@ -133,7 +133,9 @@ u_int8_t ppu_cpu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
             data = ppu->ppu_data_buffer;
             ppu->ppu_data_buffer = ppu_read(ppu, ppu->ppu_address, true);
             //Case when the palette memory is being read, as that has no delay.
-            if(ppu->ppu_address > MIN_PALETTE_MEMORY) data = ppu->ppu_data_buffer;
+            if(ppu->ppu_address > MIN_PALETTE_MEMORY)
+                data = ppu->ppu_data_buffer;
+            ppu->ppu_address++;
             break;
         default:
             INVALID;
@@ -169,7 +171,8 @@ void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
             }
             break;
         case PPU_DATA:
-            ppu_write(ppu, addr, data);
+            ppu_write(ppu, ppu->ppu_address, data);
+            ppu->ppu_address++;
             break;
         default:
             INVALID;
@@ -202,7 +205,6 @@ u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
 
 void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
     addr &= MAX_ADDRESS_PPU;
-
     if(cart_write_ppu(ppu->cart, addr, data)){
         //Do nothing..
     }
@@ -217,7 +219,7 @@ void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
         if(addr == 0x0014) addr = 0x0004;
         if(addr == 0x0018) addr = 0x0008;
         if(addr == 0x001C) addr = 0x000C;
-        data = ppu->tblPalette[addr];
+        ppu->tblPalette[addr] = data;
     }
 }
 
@@ -257,7 +259,6 @@ sprite_t* get_pattern_table(PPU2C02* ppu, uint8_t i, uint8_t palette){
                     uint8_t pixel = (tile_lsb & 0x01) + (tile_msb & 0x01);
                     tile_lsb >>= 1;
                     tile_msb >>= 1;
-
                     ppu->sprite_patterntable[i]->sprite_data[tileY * 8 + row][tileX * 8 + (7 - col)] = color_from_pal_ram(ppu, palette, pixel);
                 }
             }
