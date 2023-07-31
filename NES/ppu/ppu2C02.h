@@ -29,9 +29,22 @@ typedef struct PPU2C02 {
     uint8_t address_latch; //Tells us when we're writing to the low or high byte
     uint8_t ppu_data_buffer; //Buffered byte from reading from PPU
     uint16_t ppu_address; //Created address when reading or writing.
+    uint8_t fine_x; //Scrolling across the nametables.
     sprite_t* sprite_screen; //Full screen output
     sprite_t* sprite_nametable[2];
     sprite_t* sprite_patterntable[2];
+
+    //Scrolling information
+    uint8_t bg_next_tile_id;
+    uint8_t bg_next_tile_attrib;
+    uint8_t bg_next_tile_lsb;
+    uint8_t bg_next_tile_msb;
+
+    //Shift registers
+    uint16_t bg_shifter_pattern_lo;
+    uint16_t bg_shifter_pattern_hi;
+    uint16_t bg_shifter_attrib_lo;
+    uint16_t bg_shifter_attrib_hi;
 
     //Debug Information
     bool frame_complete;
@@ -39,6 +52,7 @@ typedef struct PPU2C02 {
     int16_t scanline;
 
     //PPU Registers
+    bool nmi;
     union
     {
         struct
@@ -85,6 +99,27 @@ typedef struct PPU2C02 {
 
         uint8_t reg;
     } control;
+
+    union loopy_register
+    {
+        // Credit to Loopy for working this out :D
+        struct
+        {
+
+            uint16_t coarse_x : 5;
+            uint16_t coarse_y : 5;
+            uint16_t nametable_x : 1;
+            uint16_t nametable_y : 1;
+            uint16_t fine_y : 3;
+            uint16_t unused : 1;
+        };
+
+        uint16_t reg;
+    };
+
+    union loopy_register vram_addr;
+    union loopy_register tram_addr;
+
 } PPU2C02;
 
 /**
@@ -135,5 +170,15 @@ void ppu_clock(PPU2C02* ppu);
 sprite_t* get_pattern_table(PPU2C02* ppu, uint8_t i, uint8_t palette);
 
 SDL_Color color_from_pal_ram(PPU2C02* ppu, uint8_t palette, uint8_t pixel);
+
+
+//Functions that modify the loopy registers
+void increment_scroll_x(PPU2C02* ppu);
+void increment_scroll_y(PPU2C02* ppu);
+void transfer_access_x(PPU2C02* ppu);
+void transfer_access_y(PPU2C02* ppu);
+void load_background_shifters(PPU2C02* ppu);
+void update_shifters(PPU2C02* ppu);
+
 
 #endif //NESEMULATOR_PPU2C02_H

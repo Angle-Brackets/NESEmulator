@@ -53,5 +53,10 @@ void bus_clock(Bus* bus) {
         clock(bus->cpu);
     }
 
+    if(bus->ppu->nmi){
+        bus->ppu->nmi = false;
+        nmi(bus->cpu);
+    }
+
     bus->system_clocks++;
 }
