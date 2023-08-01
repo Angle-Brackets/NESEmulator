@@ -524,6 +524,7 @@ u_int8_t TYA(CPU6502* cpu);
  */
 u_int8_t XXX(CPU6502* cpu);
 
+//THIS IS NOT MEMORY SAFE! ONLY USE FOR TESTING AS IT LEAKS MEMORY!
 void disassemble(CPU6502* cpu, uint16_t start, uint16_t stop);
 
 

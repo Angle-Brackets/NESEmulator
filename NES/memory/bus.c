@@ -16,6 +16,11 @@ void bus_cpu_write(Bus* bus, u_int16_t addr, u_int8_t data){
     else if(addr >= MIN_ADDRESS_PPU && addr <= MAX_ADDRESS_PPU){
         ppu_cpu_write(bus->ppu, addr & MIRROR_MASK_PPU, data);
     }
+    else if(addr == DMA_ADDRESS){
+        bus->dma_page = data;
+        bus->dma_addr = 0x00;
+        bus->dma_transfer = true;
+    }
     else if(addr >= MIN_ADDRESS_CONTROLLER && addr <= MAX_ADDRESS_CONTROLLER){
         bus->controller_state[addr & 0x0001] = bus->controller[addr & 0x0001];
     }
@@ -51,13 +56,39 @@ void insert_cartridge(Bus* bus, Cartridge* cartridge) {
 void bus_reset(Bus* bus) {
     cpu_reset(bus->cpu);
     bus->system_clocks = 0;
+    bus->dma_addr = 0x00;
+    bus->dma_data = 0x00;
+    bus->dma_transfer = false;
+    bus->dma_dummy = true;
 }
 
 void bus_clock(Bus* bus) {
     ppu_clock(bus->ppu);
 
     if(bus->system_clocks % 3 == 0){
-        clock(bus->cpu);
+        if(bus->dma_transfer){
+            if(bus->dma_dummy){
+                if(bus->system_clocks % 2 == 1){
+                    bus->dma_dummy = false; //Synchronized with the clock.
+                }
+            }
+            else{
+                if(bus->system_clocks % 2 == 0){
+                    bus->dma_data = bus_cpu_read(bus, bus->dma_page << 8 | bus->dma_addr, true);
+                }
+                else {
+                    bus->ppu->pOAM[bus->dma_addr] = bus->dma_data;
+                    bus->dma_addr++; //Write all the bytes to the PPU, and it will wrap back to zero when done.
+                    if(bus->dma_addr == 0x00){
+                        bus->dma_transfer = false;
+                        bus->dma_dummy = true;
+                    }
+                }
+            }
+        }
+        else{
+            clock(bus->cpu);
+        }
     }
 
     if(bus->ppu->nmi){

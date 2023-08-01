@@ -51,6 +51,22 @@ typedef struct PPU2C02 {
     int16_t cycle;
     int16_t scanline;
 
+    //OAM Memory layout information
+    struct sObjectAttributeEntry {
+        uint8_t y;
+        uint8_t id;
+        uint8_t attribute;
+        uint8_t x;
+    } OAM[64];
+    uint8_t* pOAM; //Pointer for OAM memory to be read byte-by-byte
+    uint8_t oam_addr;
+    uint8_t sprite_count;
+    uint8_t sprite_shifter_pattern_lo[8];
+    uint8_t sprite_shifter_pattern_hi[8];
+    struct sObjectAttributeEntry sprite_scanline[8]; //The 8 sprites we can draw per frame.
+    bool sprite_zero_hit_possible;
+    bool sprite_zero_being_rendered;
+
     //PPU Registers
     bool nmi;
     union
@@ -179,6 +195,9 @@ void transfer_access_x(PPU2C02* ppu);
 void transfer_access_y(PPU2C02* ppu);
 void load_background_shifters(PPU2C02* ppu);
 void update_shifters(PPU2C02* ppu);
+
+//Utility Functions
+uint8_t byte_flip(uint8_t b);
 
 
 #endif //NESEMULATOR_PPU2C02_H

@@ -24,6 +24,13 @@ typedef struct Bus {
     uint8_t controller_state[2];
     u_int8_t cpu_ram[RAM_SIZE];
     u_int32_t system_clocks; //Number of clocks the system has gone through
+
+    //DMA
+    bool dma_transfer; //Is a DMA happening?
+    bool dma_dummy;
+    uint8_t dma_page;
+    uint8_t dma_addr;
+    uint8_t dma_data;
 } Bus;
 
 //General Bus Operations
