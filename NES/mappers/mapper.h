@@ -13,6 +13,7 @@ typedef struct MAPPER {
     bool (*mapper_cpu_write)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
     bool (*mapper_ppu_read)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
     bool (*mapper_ppu_write)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
+    void (*reset)(struct MAPPER* mapper);
 
 } MAPPER;
 

@@ -38,6 +38,10 @@ bool mapper_000_ppu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr
     return false;
 }
 
+void mapper000_reset(MAPPER* mapper){
+    //Does nothing.
+}
+
 
 void create_mapper_000(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_banks){
     init_mapper(mapper, num_prg_banks, num_chr_banks);
@@ -46,5 +50,6 @@ void create_mapper_000(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_
     mapper->mapper_cpu_write = mapper000_cpu_write;
     mapper->mapper_ppu_read = mapper_000_ppu_read;
     mapper->mapper_ppu_write = mapper_000_ppu_write;
+    mapper->reset = mapper000_reset;
 }
 

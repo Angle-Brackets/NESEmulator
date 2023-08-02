@@ -54,6 +54,11 @@ void initialize_cartridge(Cartridge* cart, const char* file) {
         case 0:
             create_mapper_000(&cart->mapper, cart->prg_banks, cart->chr_banks);
             break;
+        case 1:
+            break;
+        case 2:
+            break;
+
     }
 
     fclose(fp);

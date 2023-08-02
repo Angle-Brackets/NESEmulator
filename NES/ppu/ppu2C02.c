@@ -1,8 +1,6 @@
 #include "ppu2C02.h"
 #include "../emuconsts.h"
 
-//Just placeholders for now.
-
 PPU2C02* initialize_ppu() {
     PPU2C02* ppu = (PPU2C02*)calloc(1, sizeof(PPU2C02));
     //Sprites that are used to draw to the screen
@@ -193,7 +191,7 @@ void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
             break;
         case PPU_ADDRESS:
             if(ppu->address_latch == 0){
-                ppu->tram_addr.reg = (ppu->tram_addr.reg & LOW_BIT_MASK) | (data << 8);
+                ppu->tram_addr.reg = (uint16_t)((data & 0x3F) << 8) | (ppu->tram_addr.reg & LOW_BIT_MASK);
                 ppu->address_latch = 1;
             }
             else{
