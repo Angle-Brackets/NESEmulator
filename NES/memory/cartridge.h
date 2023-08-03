@@ -7,17 +7,10 @@
 
 //Mappers
 #include "../mappers/custom_mappers/mapper_000.h"
+#include "../mappers/custom_mappers/mapper_002.h"
 
 #define PRG_BANK_SIZE 16384 //~16K
 #define CHR_BANK_SIZE 8192 //~8K
-
-enum MIRROR
-{
-    HORIZONTAL,
-    VERTICAL,
-    ONESCREEN_LO,
-    ONESCREEN_HI,
-} mirror;
 
 typedef struct Cartridge {
     char* file; //File that we loaded
@@ -34,6 +27,7 @@ typedef struct Cartridge {
 } Cartridge;
 
 void initialize_cartridge(Cartridge* cart, const char* file);
+void reset_cartridge(Cartridge* cart); //Resets mappers
 
 bool cart_read_cpu(Cartridge* cart, uint16_t addr, uint8_t* data);
 bool cart_write_cpu(Cartridge* cart, uint16_t addr, uint8_t data);

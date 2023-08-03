@@ -3,9 +3,6 @@
 
 #include "../mapper.h"
 
-static u_int8_t prg_bank_lo = 0x00;
-static u_int8_t prg_bank_hi = 0x00;
-
 /**
  * Will create a mapper struct with the properties of mapper_002
  * @param mapper Mapper struct to write to

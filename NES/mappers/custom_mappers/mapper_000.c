@@ -1,6 +1,6 @@
 #include "mapper_000.h"
 
-bool mapper000_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
+bool mapper000_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t* data){
     if(addr >= 0x8000 && addr <= 0xFFFF){
         *mapped_addr = addr & (mapper->prg_banks > 1 ? 0x7FFF : 0x3FFF);
         return true;
@@ -9,7 +9,7 @@ bool mapper000_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
     return false;
 }
 
-bool mapper000_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
+bool mapper000_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t data){
     if(addr >= 0x8000 && addr <= 0xFFFF){
         *mapped_addr = addr & (mapper->prg_banks > 1 ? 0x7FFF : 0x3FFF);
         return true;

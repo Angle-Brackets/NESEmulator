@@ -1,6 +1,9 @@
 #include "mapper_002.h"
 
-bool mapper002_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
+static u_int8_t prg_bank_lo;
+static u_int8_t prg_bank_hi;
+
+bool mapper002_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t* data){
     if(addr >= 0x8000 && addr <= 0xBFFF){
         *mapped_addr = prg_bank_lo * 0x4000 + (addr & 0x3FFF);
         return true;
@@ -13,22 +16,25 @@ bool mapper002_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
     return false;
 }
 
-bool mapper002_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
+bool mapper002_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t data){
     if(addr >= 0x8000 && addr <= 0xFFFF){
-        prg_bank_lo = 7;
+        prg_bank_lo = data & 0x0F;
     }
 
     return false;
 }
 
 bool mapper_002_ppu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
-
+    if(addr < 0x2000){
+        *mapped_addr = addr;
+        return true;
+    }
 
     return false;
 }
 
 bool mapper_002_ppu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
-    if(addr >= 0x0000 && addr <= 0x1FFF){
+    if(addr < 0x2000){
         if(mapper->chr_banks == 0){
             *mapped_addr = addr;
             return true;
@@ -39,7 +45,8 @@ bool mapper_002_ppu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr
 }
 
 void mapper002_reset(MAPPER* mapper){
-    //Does nothing.
+    prg_bank_lo = 0x00;
+    prg_bank_hi = mapper->prg_banks - 1;
 }
 
 
