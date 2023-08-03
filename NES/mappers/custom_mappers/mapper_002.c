@@ -49,6 +49,10 @@ void mapper002_reset(MAPPER* mapper){
     prg_bank_hi = mapper->prg_banks - 1;
 }
 
+enum MIRROR mapper002_mirror(MAPPER* mapper){
+    return HARDWARE;
+}
+
 
 void create_mapper_002(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_banks){
     init_mapper(mapper, num_prg_banks, num_chr_banks);
@@ -58,5 +62,6 @@ void create_mapper_002(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_
     mapper->mapper_ppu_read = mapper_002_ppu_read;
     mapper->mapper_ppu_write = mapper_002_ppu_write;
     mapper->reset = mapper002_reset;
+    mapper->mirror = mapper002_mirror;
 }
 

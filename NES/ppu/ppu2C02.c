@@ -222,7 +222,7 @@ u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
     else if(addr >= MIN_NAMETABLE_MEMORY && addr <= MAX_NAMETABLE_MEMORY){
         //Nametable mirroring (scrolling)
         addr &= 0x0FFF;
-        if(ppu->cart->mirror == VERTICAL){
+        if(cart_mirror(ppu->cart) == VERTICAL){
             if(addr >= 0x0000 && addr <= 0x03FF)
                 data = ppu->tblName[0][addr & 0x03FF];
             if(addr >= 0x0400 && addr <= 0x07FF)
@@ -232,7 +232,7 @@ u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
             if(addr >= 0x0C00 && addr <= 0x0FFF)
                 data = ppu->tblName[1][addr & 0x03FF];
         }
-        else if(ppu->cart->mirror == HORIZONTAL){
+        else if(cart_mirror(ppu->cart) == HORIZONTAL){
             if(addr >= 0x0000 && addr <= 0x03FF)
                 data = ppu->tblName[0][addr & 0x03FF];
             if(addr >= 0x0400 && addr <= 0x07FF)
@@ -267,7 +267,7 @@ void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
     else if(addr >= MIN_NAMETABLE_MEMORY && addr <= MAX_NAMETABLE_MEMORY){
         //Nametable mirroring (scrolling)
         addr &= 0x0FFF;
-        if(ppu->cart->mirror == VERTICAL){
+        if(cart_mirror(ppu->cart) == VERTICAL){
             if(addr >= 0x0000 && addr <= 0x03FF)
                 ppu->tblName[0][addr & 0x03FF] = data;
             if(addr >= 0x0400 && addr <= 0x07FF)
@@ -277,7 +277,7 @@ void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
             if(addr >= 0x0C00 && addr <= 0x0FFF)
                 ppu->tblName[1][addr & 0x03FF] = data;
         }
-        else if(ppu->cart->mirror == HORIZONTAL){
+        else if(cart_mirror(ppu->cart) == HORIZONTAL){
             if(addr >= 0x0000 && addr <= 0x03FF)
                 ppu->tblName[0][addr & 0x03FF] = data;
             if(addr >= 0x0400 && addr <= 0x07FF)
