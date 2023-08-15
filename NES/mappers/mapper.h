@@ -11,7 +11,7 @@ enum MIRROR
     VERTICAL,
     ONESCREEN_LO,
     ONESCREEN_HI,
-} mirror;
+};
 
 typedef struct MAPPER {
     u_int8_t prg_banks;

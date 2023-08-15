@@ -6,7 +6,7 @@
 #include <SDL2/SDL.h>
 
 #include "../memory/cartridge.h"
-#include "graphics/sprite.h"
+#include "pixelinator.h"
 
 //Addresses that the PPU can read from through the CPU
 #define CONTROL 0x0000
@@ -33,6 +33,7 @@ typedef struct PPU2C02 {
     sprite_t* sprite_screen; //Full screen output
     sprite_t* sprite_nametable[2];
     sprite_t* sprite_patterntable[2];
+    bool odd_frame;
 
     //Scrolling information
     uint8_t bg_next_tile_id;
@@ -118,7 +119,6 @@ typedef struct PPU2C02 {
 
     union loopy_register
     {
-        // Credit to Loopy for working this out :D
         struct
         {
 

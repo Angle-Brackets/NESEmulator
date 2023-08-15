@@ -55,9 +55,11 @@ void insert_cartridge(Bus* bus, Cartridge* cartridge) {
 
 void bus_reset(Bus* bus) {
     cpu_reset(bus->cpu);
+    reset_cartridge(bus->cart);
     bus->system_clocks = 0;
     bus->dma_addr = 0x00;
     bus->dma_data = 0x00;
+    bus->dma_page = 0x00;
     bus->dma_transfer = false;
     bus->dma_dummy = true;
 }
@@ -79,6 +81,7 @@ void bus_clock(Bus* bus) {
                 else {
                     bus->ppu->pOAM[bus->dma_addr] = bus->dma_data;
                     bus->dma_addr++; //Write all the bytes to the PPU, and it will wrap back to zero when done.
+
                     if(bus->dma_addr == 0x00){
                         bus->dma_transfer = false;
                         bus->dma_dummy = true;

@@ -25,21 +25,21 @@ CPU6502* initialize_cpu(Bus* bus){
 
     //Initialize CPU
     *cpu = (CPU6502){
-        .a = UNITIALIZED,
-        .x = UNITIALIZED,
-        .y = UNITIALIZED,
-        .stkp = UNITIALIZED,
-        .pc = UNITIALIZED,
-        .status = UNITIALIZED,
-        .bus = bus,
+            .a = UNITIALIZED,
+            .x = UNITIALIZED,
+            .y = UNITIALIZED,
+            .stkp = UNITIALIZED,
+            .pc = UNITIALIZED,
+            .status = UNITIALIZED,
+            .bus = bus,
 
-        .fetched = UNITIALIZED,
-        .temp = UNITIALIZED,
-        .addr_abs = UNITIALIZED,
-        .addr_rel = UNITIALIZED,
-        .opcode = UNITIALIZED,
-        .cycles = UNITIALIZED,
-        .clock_count = UNITIALIZED
+            .fetched = UNITIALIZED,
+            .temp = UNITIALIZED,
+            .addr_abs = UNITIALIZED,
+            .addr_rel = UNITIALIZED,
+            .opcode = UNITIALIZED,
+            .cycles = UNITIALIZED,
+            .clock_count = UNITIALIZED
     };
 
     memcpy(cpu->lookup, INSTRUCTIONS, sizeof(INSTRUCTION) * OPCODES);

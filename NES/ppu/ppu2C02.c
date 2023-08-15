@@ -30,6 +30,7 @@ PPU2C02* initialize_ppu() {
     ppu->pOAM = (uint8_t*)ppu->OAM;
     ppu->oam_addr = 0x00;
 
+    ppu->odd_frame = false;
     ppu->nmi = false;
     ppu->sprite_zero_hit_possible = false;
     ppu->sprite_zero_being_rendered = false;
@@ -153,7 +154,7 @@ u_int8_t ppu_cpu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
             ppu->vram_addr.reg += (ppu->control.increment_mode ? 32 : 1);
             break;
         default:
-            INVALID;
+            UNITIALIZED;
     }
 
     return data;
@@ -176,6 +177,7 @@ void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
             break;
         case OAM_DATA:
             ppu->pOAM[ppu->oam_addr] = data;
+            //ppu->oam_addr++; //temp
             break;
         case SCROLL:
             if(ppu->address_latch == 0){
@@ -205,7 +207,7 @@ void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
             ppu->vram_addr.reg += (ppu->control.increment_mode ? 32 : 1);
             break;
         default:
-            INVALID;
+            UNITIALIZED;
     }
 }
 
@@ -250,7 +252,7 @@ u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
         if(addr == 0x0014) addr = 0x0004;
         if(addr == 0x0018) addr = 0x0008;
         if(addr == 0x001C) addr = 0x000C;
-        data = ppu->tblPalette[addr];
+        data = ppu->tblPalette[addr] & (ppu->mask.grayscale ? 0x30 : 0x3F);
     }
 
     return data;
@@ -309,7 +311,7 @@ SDL_Color color_from_pal_ram(PPU2C02* ppu, uint8_t palette, uint8_t pixel){
 
 void ppu_clock(PPU2C02* ppu){
     if(ppu->scanline >= -1 && ppu->scanline < 240) {
-        if(ppu->scanline == 0 && ppu->cycle == 0){
+        if(ppu->scanline == 0 && ppu->cycle == 0 && ppu->odd_frame && (ppu->mask.render_background || ppu->mask.render_sprites)){
             ppu->cycle = 1;
         }
         if(ppu->scanline == -1 && ppu->cycle == 1) {
@@ -343,14 +345,14 @@ void ppu_clock(PPU2C02* ppu){
                 case 4:
                     ppu->bg_next_tile_lsb = ppu_read(ppu,
                                                      (ppu->control.pattern_background << 12) +
-                                                     ((uint16_t)ppu->bg_next_tile_id << 4)   +
+                                                     (((uint16_t)ppu->bg_next_tile_id) << 4) +
                                                      (ppu->vram_addr.fine_y + 0), true
                     );
                     break;
                 case 6:
                     ppu->bg_next_tile_msb = ppu_read(ppu,
                                                      (ppu->control.pattern_background << 12) +
-                                                     ((uint16_t)ppu->bg_next_tile_id << 4)   +
+                                                     (((uint16_t)ppu->bg_next_tile_id) << 4) +
                                                      (ppu->vram_addr.fine_y + 8), true
                     );
                     break;
@@ -378,17 +380,17 @@ void ppu_clock(PPU2C02* ppu){
         if(ppu->cycle == 257 && ppu->scanline >= 0){
             memset(ppu->sprite_scanline, 0xFF, 8 * sizeof(struct sObjectAttributeEntry));
             ppu->sprite_count = 0;
-            uint8_t oam_entries = 0;
-            ppu->sprite_zero_hit_possible = false;
-
             for (uint8_t i = 0; i < 8; i++){
                 ppu->sprite_shifter_pattern_lo[i] = 0;
                 ppu->sprite_shifter_pattern_hi[i] = 0;
             }
 
+            uint8_t oam_entries = 0;
+            ppu->sprite_zero_hit_possible = false;
+
             while(oam_entries < 64 && ppu->sprite_count < 9){
-                int16_t diff = ((int16_t)ppu->scanline - (int16_t)ppu->OAM[oam_entries].y);
-                if(diff >= 0 && diff < (ppu->control.sprite_size ? 16 : 8)){
+                int16_t diff = (((int16_t)ppu->scanline) - (int16_t)(ppu->OAM[oam_entries].y));
+                if(diff >= 0 && diff < (ppu->control.sprite_size ? 16 : 8) && ppu->sprite_count < 8){
                     if(ppu->sprite_count < 8){
                         //Check if it's sprite zero
                         if(oam_entries == 0){
@@ -396,12 +398,12 @@ void ppu_clock(PPU2C02* ppu){
                         }
 
                         memcpy(&ppu->sprite_scanline[ppu->sprite_count], &ppu->OAM[oam_entries], sizeof(struct sObjectAttributeEntry));
-                        ppu->sprite_count++;
                     }
+                    ppu->sprite_count++;
                 }
                 oam_entries++;
             }
-            ppu->status.sprite_overflow = (ppu->sprite_count > 8);
+            ppu->status.sprite_overflow = (ppu->sprite_count >= 8);
         }
 
         if(ppu->cycle == 340){
@@ -482,10 +484,11 @@ void ppu_clock(PPU2C02* ppu){
         //Nothing.
     }
 
-    if(ppu->scanline == 241 && ppu->cycle == 1){
-        ppu->status.vertical_blank = 1;
-        if(ppu->control.enable_nmi){
-            ppu->nmi = true;
+    if(ppu->scanline >= 241 && ppu->scanline < 261){
+        if(ppu->scanline == 241 && ppu->cycle == 1){
+            ppu->status.vertical_blank = 1;
+            if(ppu->control.enable_nmi)
+                ppu->nmi = true;
         }
     }
 
@@ -495,16 +498,18 @@ void ppu_clock(PPU2C02* ppu){
 
     //Render background.
     if(ppu->mask.render_background){
-        uint16_t bit_mux = 0x8000 >> ppu->fine_x;
-        uint8_t p0_pixel = (ppu->bg_shifter_pattern_lo & bit_mux) > 0;
-        uint8_t p1_pixel = (ppu->bg_shifter_pattern_hi & bit_mux) > 0;
-        //Pixel index
-        bg_pixel = (p1_pixel << 1) | p0_pixel;
+        if(ppu->mask.render_background_left || (ppu->cycle >= 9)) {
+            uint16_t bit_mux = 0x8000 >> ppu->fine_x;
+            uint8_t p0_pixel = (ppu->bg_shifter_pattern_lo & bit_mux) > 0;
+            uint8_t p1_pixel = (ppu->bg_shifter_pattern_hi & bit_mux) > 0;
+            //Pixel index
+            bg_pixel = (p1_pixel << 1) | p0_pixel;
 
-        //Get palette
-        uint8_t bg_pal0 = (ppu->bg_shifter_attrib_lo & bit_mux) > 0;
-        uint8_t bg_pal1 = (ppu->bg_shifter_attrib_hi & bit_mux) > 0;
-        bg_palette = (bg_pal1 << 1) | bg_pal0;
+            //Get palette
+            uint8_t bg_pal0 = (ppu->bg_shifter_attrib_lo & bit_mux) > 0;
+            uint8_t bg_pal1 = (ppu->bg_shifter_attrib_hi & bit_mux) > 0;
+            bg_palette = (bg_pal1 << 1) | bg_pal0;
+        }
     }
 
     //Render Sprites
@@ -513,23 +518,25 @@ void ppu_clock(PPU2C02* ppu){
     uint8_t fg_priority = 0x00;
 
     if(ppu->mask.render_sprites){
-        ppu->sprite_zero_being_rendered = false;
+        if(ppu->mask.render_sprites_left || (ppu->cycle >= 9)) {
+            ppu->sprite_zero_being_rendered = false;
 
-        for(uint8_t i = 0; i < ppu->sprite_count; i++){
-            if(ppu->sprite_scanline[i].x == 0){
-                uint8_t fg_pixel_lo = (ppu->sprite_shifter_pattern_lo[i] & 0x80) > 0;
-                uint8_t fg_pixel_hi = (ppu->sprite_shifter_pattern_hi[i] & 0x80) > 0;
-                fg_pixel = (fg_pixel_hi << 1) | fg_pixel_lo;
+            for (uint8_t i = 0; i < ppu->sprite_count; i++) {
+                if (ppu->sprite_scanline[i].x == 0) {
+                    uint8_t fg_pixel_lo = (ppu->sprite_shifter_pattern_lo[i] & 0x80) > 0;
+                    uint8_t fg_pixel_hi = (ppu->sprite_shifter_pattern_hi[i] & 0x80) > 0;
+                    fg_pixel = (fg_pixel_hi << 1) | fg_pixel_lo;
 
-                fg_palette = (ppu->sprite_scanline[i].attribute & 0x03) + 0x04;
-                fg_priority = (ppu->sprite_scanline[i].attribute & 0x20) == 0;
+                    fg_palette = (ppu->sprite_scanline[i].attribute & 0x03) + 0x04;
+                    fg_priority = (ppu->sprite_scanline[i].attribute & 0x20) == 0;
 
-                //It's not transparent!
-                if(fg_pixel != 0){
-                    if(i == 0){
-                        ppu->sprite_zero_being_rendered = true;
+                    //It's not transparent!
+                    if (fg_pixel != 0) {
+                        if (i == 0) {
+                            ppu->sprite_zero_being_rendered = true;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -566,8 +573,8 @@ void ppu_clock(PPU2C02* ppu){
         }
 
         if(ppu->sprite_zero_being_rendered && ppu->sprite_zero_hit_possible){
-            if(ppu->mask.render_background && ppu->mask.render_sprites){
-                if(~(ppu->mask.render_background_left | ppu->mask.render_sprites_left)){
+            if(ppu->mask.render_background & ppu->mask.render_sprites){
+                if(!(ppu->mask.render_background_left | ppu->mask.render_sprites_left)){
                     if(ppu->cycle >= 9 && ppu->cycle < 258){
                         ppu->status.sprite_zero_hit = 1;
                     }
@@ -588,14 +595,23 @@ void ppu_clock(PPU2C02* ppu){
     }
 
     ppu->cycle++;
+
+    if(ppu->mask.render_background || ppu->mask.render_sprites){
+        if(ppu->cycle == 260 && ppu->scanline < 240){
+            //TODO: PUT SOMETHING HERE!
+        }
+    }
+
     if(ppu->cycle >= 341){
         ppu->cycle = 0;
         ppu->scanline++;
-        if(ppu->scanline >= 300){
+        if(ppu->scanline >= 261){
             ppu->scanline = -1;
             ppu->frame_complete = true;
+            ppu->odd_frame = !ppu->odd_frame;
         }
     }
+
 }
 
 sprite_t* get_pattern_table(PPU2C02* ppu, uint8_t i, uint8_t palette){

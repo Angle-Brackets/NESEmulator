@@ -7,6 +7,7 @@
 
 //Mappers
 #include "../mappers/custom_mappers/mapper_000.h"
+#include "../mappers/custom_mappers/mapper_001.h"
 #include "../mappers/custom_mappers/mapper_002.h"
 #include "../mappers/custom_mappers/mapper_003.h"
 

@@ -68,17 +68,20 @@ void initialize_cartridge(Cartridge* cart, const char* file) {
         case 0:
             create_mapper_000(&cart->mapper, cart->prg_banks, cart->chr_banks);
             break;
+        case 1:
+            create_mapper_001(&cart->mapper, cart->prg_banks, cart->chr_banks);
+            break;
         case 2:
             create_mapper_002(&cart->mapper, cart->prg_banks, cart->chr_banks);
             break;
         case 3:
             create_mapper_003(&cart->mapper, cart->prg_banks, cart->chr_banks);
+            break;
         default:
             fprintf(stderr, "Unsupported Mapper: %i\n", cart->mapperID);
             exit(1);
     }
 
-    reset_cartridge(cart); //Be very careful with this, make sure any local variables to the mapper are in the .c file!
     fclose(fp);
 }
 
