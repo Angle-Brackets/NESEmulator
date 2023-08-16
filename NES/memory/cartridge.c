@@ -143,7 +143,14 @@ bool cart_write_ppu(Cartridge* cart, uint16_t addr, uint8_t data) {
 }
 
 enum MIRROR cart_mirror(Cartridge* cart){
+    static bool warning = false; //Warning for if ONESCREEN_LO or HI is used.
     enum MIRROR m = cart->mapper.mirror(&cart->mapper);
+
+    if(!warning && ((m == ONESCREEN_LO) || (m == ONESCREEN_HI))){
+        warning = true;
+        fprintf(stderr, "Game loaded uses mirror modes that are not supported, it is unlikely that it will work!\n");
+    }
+
     if(m == HARDWARE){
         return cart->mirror;
     }

@@ -345,14 +345,14 @@ void ppu_clock(PPU2C02* ppu){
                 case 4:
                     ppu->bg_next_tile_lsb = ppu_read(ppu,
                                                      (ppu->control.pattern_background << 12) +
-                                                     (((uint16_t)ppu->bg_next_tile_id) << 4) +
+                                                     ((uint16_t)ppu->bg_next_tile_id << 4) +
                                                      (ppu->vram_addr.fine_y + 0), true
                     );
                     break;
                 case 6:
                     ppu->bg_next_tile_msb = ppu_read(ppu,
                                                      (ppu->control.pattern_background << 12) +
-                                                     (((uint16_t)ppu->bg_next_tile_id) << 4) +
+                                                     ((uint16_t)ppu->bg_next_tile_id << 4) +
                                                      (ppu->vram_addr.fine_y + 8), true
                     );
                     break;

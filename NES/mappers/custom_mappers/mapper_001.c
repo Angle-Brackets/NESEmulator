@@ -132,7 +132,7 @@ bool mapper001_ppu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
                 }
             }
             else{
-                *mapped_addr = chr_bank_select8 * 0x2000 + (addr & 0x1FFF);
+                *mapped_addr = chr_bank_select8 * 0x1000 + (addr & 0x1FFF);
                 return true;
             }
         }
@@ -168,6 +168,7 @@ void mapper001_reset(MAPPER* mapper){
 }
 
 enum MIRROR mapper001_mirror(MAPPER* mapper){
+    //ONESCREEN_LO and ONESCREEN_HI are not supported, that's why tetris and dr.mario have issues.
     return mirror_mode;
 }
 
