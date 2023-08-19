@@ -366,13 +366,13 @@ void ppu_clock(PPU2C02* ppu){
         }
         if(ppu->cycle == 257){
             load_background_shifters(ppu);
-            transfer_access_x(ppu);
+            transfer_address_x(ppu);
         }
         if (ppu->cycle == 338 || ppu->cycle == 340){
             ppu->bg_next_tile_id = ppu_read(ppu, 0x2000 | (ppu->vram_addr.reg & 0x0FFF), true);
         }
         if(ppu->scanline == -1 && ppu->cycle >= 280 && ppu->cycle < 305){
-            transfer_access_y(ppu);
+            transfer_address_y(ppu);
         }
 
         //Foreground rendering (This is not done in parallel and not necessarily cycle accurate).
@@ -588,8 +588,7 @@ void ppu_clock(PPU2C02* ppu){
         }
     }
 
-
-
+    //WE CAN DRAW IT THANK GOD
     if(ppu->scanline >= 0 && ppu->scanline < NES_HEIGHT && ppu->cycle >= 0 && ppu->cycle < NES_WIDTH){
         ppu->sprite_screen->sprite_data[ppu->scanline][ppu->cycle] = color_from_pal_ram(ppu, palette, pixel);
     }
@@ -598,7 +597,7 @@ void ppu_clock(PPU2C02* ppu){
 
     if(ppu->mask.render_background || ppu->mask.render_sprites){
         if(ppu->cycle == 260 && ppu->scanline < 240){
-            //TODO: PUT SOMETHING HERE!
+            cart_scanline(ppu->cart);
         }
     }
 
@@ -675,14 +674,14 @@ void increment_scroll_y(PPU2C02* ppu){
     }
 }
 
-void transfer_access_x(PPU2C02* ppu){
+void transfer_address_x(PPU2C02* ppu){
     if(ppu->mask.render_background || ppu->mask.render_sprites){
         ppu->vram_addr.nametable_x = ppu->tram_addr.nametable_x;
         ppu->vram_addr.coarse_x = ppu->tram_addr.coarse_x;
     }
 }
 
-void transfer_access_y(PPU2C02* ppu){
+void transfer_address_y(PPU2C02* ppu){
     if(ppu->mask.render_background || ppu->mask.render_sprites){
         ppu->vram_addr.fine_y = ppu->tram_addr.fine_y;
         ppu->vram_addr.nametable_y = ppu->tram_addr.nametable_y;

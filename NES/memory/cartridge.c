@@ -77,6 +77,9 @@ void initialize_cartridge(Cartridge* cart, const char* file) {
         case 3:
             create_mapper_003(&cart->mapper, cart->prg_banks, cart->chr_banks);
             break;
+        case 4:
+            create_mapper_004(&cart->mapper, cart->prg_banks, cart->chr_banks);
+            break;
         default:
             fprintf(stderr, "Unsupported Mapper: %i\n", cart->mapperID);
             exit(1);
@@ -157,4 +160,8 @@ enum MIRROR cart_mirror(Cartridge* cart){
     else{
         return m; //This mirror has been modified by the cartridge!
     }
+}
+
+void cart_scanline(Cartridge* cart){
+    cart->mapper.scanline(&cart->mapper);
 }

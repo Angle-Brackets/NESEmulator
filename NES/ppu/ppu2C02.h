@@ -191,8 +191,8 @@ SDL_Color color_from_pal_ram(PPU2C02* ppu, uint8_t palette, uint8_t pixel);
 //Functions that modify the loopy registers
 void increment_scroll_x(PPU2C02* ppu);
 void increment_scroll_y(PPU2C02* ppu);
-void transfer_access_x(PPU2C02* ppu);
-void transfer_access_y(PPU2C02* ppu);
+void transfer_address_x(PPU2C02* ppu);
+void transfer_address_y(PPU2C02* ppu);
 void load_background_shifters(PPU2C02* ppu);
 void update_shifters(PPU2C02* ppu);
 

@@ -10,6 +10,7 @@
 #include "../mappers/custom_mappers/mapper_001.h"
 #include "../mappers/custom_mappers/mapper_002.h"
 #include "../mappers/custom_mappers/mapper_003.h"
+#include "../mappers/custom_mappers/mapper_004.h"
 
 #define PRG_BANK_SIZE 16384 //~16K
 #define CHR_BANK_SIZE 8192 //~8K
@@ -36,5 +37,6 @@ bool cart_read_ppu(Cartridge* cart, uint16_t addr, uint8_t* data);
 bool cart_write_ppu(Cartridge* cart, uint16_t addr, uint8_t data);
 
 enum MIRROR cart_mirror(Cartridge* cart);
+void cart_scanline(Cartridge* cart);
 
 #endif //NESEMULATOR_CARTRIDGE_H

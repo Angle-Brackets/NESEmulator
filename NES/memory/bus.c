@@ -54,8 +54,8 @@ void insert_cartridge(Bus* bus, Cartridge* cartridge) {
 }
 
 void bus_reset(Bus* bus) {
-    cpu_reset(bus->cpu);
     reset_cartridge(bus->cart);
+    cpu_reset(bus->cpu);
     bus->system_clocks = 0;
     bus->dma_addr = 0x00;
     bus->dma_data = 0x00;
@@ -97,6 +97,12 @@ void bus_clock(Bus* bus) {
     if(bus->ppu->nmi){
         bus->ppu->nmi = false;
         nmi(bus->cpu);
+    }
+
+    //Check if cartridge sent an IRQ
+    if(bus->cart->mapper.mapper_irq_state(&bus->cart->mapper)){
+        bus->cart->mapper.mapper_irq_clear(&bus->cart->mapper);
+        irq(bus->cpu);
     }
 
     bus->system_clocks++;

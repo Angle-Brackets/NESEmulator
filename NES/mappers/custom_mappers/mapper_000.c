@@ -46,6 +46,18 @@ void mapper000_reset(MAPPER* mapper){
     //Does nothing.
 }
 
+bool mapper000_irq_state(MAPPER* mapper){
+    //Does nothing.
+    return false;
+}
+
+void mapper000_irq_clear(MAPPER* mapper){
+    //Does nothing.
+}
+
+void mapper000_scanline(MAPPER* mapper){
+    //Does nothing.
+}
 
 void create_mapper_000(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_banks){
     init_mapper(mapper, num_prg_banks, num_chr_banks);
@@ -54,7 +66,10 @@ void create_mapper_000(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_
     mapper->mapper_cpu_write = mapper000_cpu_write;
     mapper->mapper_ppu_read = mapper_000_ppu_read;
     mapper->mapper_ppu_write = mapper_000_ppu_write;
+    mapper->mapper_irq_state = mapper000_irq_state;
+    mapper->mapper_irq_clear = mapper000_irq_clear;
     mapper->reset = mapper000_reset;
     mapper->mirror = mapper000_mirror;
+    mapper->scanline = mapper000_scanline;
 }
 

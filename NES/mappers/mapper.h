@@ -17,12 +17,19 @@ typedef struct MAPPER {
     u_int8_t prg_banks;
     u_int8_t chr_banks;
 
-    //The 4 functions associated with each mapper.
+    //The 4 memory functions associated with each mapper.
     bool (*mapper_cpu_read)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t* data);
     bool (*mapper_cpu_write)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t data);
     bool (*mapper_ppu_read)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
     bool (*mapper_ppu_write)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
+
+    //IRQ functions
+    bool (*mapper_irq_state)(struct MAPPER* mapper);
+    void (*mapper_irq_clear)(struct MAPPER* mapper);
+
+    //Utility Functions
     void (*reset)(struct MAPPER* mapper);
+    void (*scanline)(struct MAPPER* mapper);
     enum MIRROR (*mirror)(struct MAPPER* mapper);
 
 } MAPPER;

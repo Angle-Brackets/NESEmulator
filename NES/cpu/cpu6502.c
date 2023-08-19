@@ -52,10 +52,12 @@ u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {
 }
 
 void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v) {
-    if (v)
+    if(v){
         cpu->status |= f;
-    else
+    }
+    else{
         cpu->status &= ~f;
+    }
 }
 
 void write(CPU6502* cpu, u_int16_t addr, u_int8_t data){
@@ -80,12 +82,12 @@ void cpu_reset(CPU6502* cpu){
     cpu->x = UNITIALIZED;
     cpu->y = UNITIALIZED;
     cpu->stkp = 0xFD;
-    cpu->status = UNITIALIZED | U;
+    cpu->status = 0x00 | U;
 
     //Clear helper variables
     cpu->addr_rel = UNITIALIZED;
     cpu->addr_abs = UNITIALIZED;
-    cpu->fetched = UNITIALIZED;
+    cpu->fetched = 0x00;
 
     cpu->cycles = 8;
 }
@@ -104,7 +106,6 @@ void irq(CPU6502* cpu){
         set_flag(cpu, U, 1);
         set_flag(cpu, I, 1);
         write(cpu, 0x0100 + cpu->stkp, cpu->status);
-
         // Grab the new PC from a fixed addr for interrupts
         cpu->addr_abs = 0xFFFE;
         u_int16_t low = read(cpu, cpu->addr_abs);
@@ -897,6 +898,7 @@ static char* hex(uint32_t n, uint8_t d){
 }
 
 void disassemble(CPU6502* cpu, uint16_t start, uint16_t stop){
+    //Again not memory safe!
     uint32_t addr = start;
     uint8_t value = 0x00;
     uint8_t low = 0x00;
