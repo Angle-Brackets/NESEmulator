@@ -2,7 +2,6 @@
 #define NESEMULATOR_EMUCONSTS_H
 
 #define UNITIALIZED 0x0000
-#define INVALID 0x0000
 #define ZERO 0x00
 
 #define WIDTH 750

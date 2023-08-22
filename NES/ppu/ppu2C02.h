@@ -6,7 +6,7 @@
 #include <SDL2/SDL.h>
 
 #include "../memory/cartridge.h"
-#include "graphics/sprite.h"
+#include "pixelinator.h"
 
 //Addresses that the PPU can read from through the CPU
 #define CONTROL 0x0000
@@ -33,6 +33,7 @@ typedef struct PPU2C02 {
     sprite_t* sprite_screen; //Full screen output
     sprite_t* sprite_nametable[2];
     sprite_t* sprite_patterntable[2];
+    bool odd_frame;
 
     //Scrolling information
     uint8_t bg_next_tile_id;
@@ -118,7 +119,6 @@ typedef struct PPU2C02 {
 
     union loopy_register
     {
-        // Credit to Loopy for working this out :D
         struct
         {
 
@@ -191,8 +191,8 @@ SDL_Color color_from_pal_ram(PPU2C02* ppu, uint8_t palette, uint8_t pixel);
 //Functions that modify the loopy registers
 void increment_scroll_x(PPU2C02* ppu);
 void increment_scroll_y(PPU2C02* ppu);
-void transfer_access_x(PPU2C02* ppu);
-void transfer_access_y(PPU2C02* ppu);
+void transfer_address_x(PPU2C02* ppu);
+void transfer_address_y(PPU2C02* ppu);
 void load_background_shifters(PPU2C02* ppu);
 void update_shifters(PPU2C02* ppu);
 

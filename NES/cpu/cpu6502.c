@@ -25,21 +25,21 @@ CPU6502* initialize_cpu(Bus* bus){
 
     //Initialize CPU
     *cpu = (CPU6502){
-        .a = UNITIALIZED,
-        .x = UNITIALIZED,
-        .y = UNITIALIZED,
-        .stkp = UNITIALIZED,
-        .pc = UNITIALIZED,
-        .status = UNITIALIZED,
-        .bus = bus,
+            .a = UNITIALIZED,
+            .x = UNITIALIZED,
+            .y = UNITIALIZED,
+            .stkp = UNITIALIZED,
+            .pc = UNITIALIZED,
+            .status = UNITIALIZED,
+            .bus = bus,
 
-        .fetched = UNITIALIZED,
-        .temp = UNITIALIZED,
-        .addr_abs = UNITIALIZED,
-        .addr_rel = UNITIALIZED,
-        .opcode = UNITIALIZED,
-        .cycles = UNITIALIZED,
-        .clock_count = UNITIALIZED
+            .fetched = UNITIALIZED,
+            .temp = UNITIALIZED,
+            .addr_abs = UNITIALIZED,
+            .addr_rel = UNITIALIZED,
+            .opcode = UNITIALIZED,
+            .cycles = UNITIALIZED,
+            .clock_count = UNITIALIZED
     };
 
     memcpy(cpu->lookup, INSTRUCTIONS, sizeof(INSTRUCTION) * OPCODES);
@@ -52,10 +52,12 @@ u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {
 }
 
 void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v) {
-    if (v)
+    if(v){
         cpu->status |= f;
-    else
+    }
+    else{
         cpu->status &= ~f;
+    }
 }
 
 void write(CPU6502* cpu, u_int16_t addr, u_int8_t data){
@@ -80,12 +82,12 @@ void cpu_reset(CPU6502* cpu){
     cpu->x = UNITIALIZED;
     cpu->y = UNITIALIZED;
     cpu->stkp = 0xFD;
-    cpu->status = UNITIALIZED | U;
+    cpu->status = 0x00 | U;
 
     //Clear helper variables
     cpu->addr_rel = UNITIALIZED;
     cpu->addr_abs = UNITIALIZED;
-    cpu->fetched = UNITIALIZED;
+    cpu->fetched = 0x00;
 
     cpu->cycles = 8;
 }
@@ -94,23 +96,27 @@ void irq(CPU6502* cpu){
     if(get_flag(cpu, I) == 0){
         //We are now activating an interrupt, so we need to push PC to the stack
         //it takes 2 pushes as the PC is a 16 bit value.
-        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+        // Push the program counter to the stack. It's 16-bits dont
+        // forget so that takes two pushes
+        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
         cpu->stkp--;
-        write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+        write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
         cpu->stkp--;
 
-        //Now save all the status values to the stack
+        // Then Push the status register to the stack
         set_flag(cpu, B, 0);
         set_flag(cpu, U, 1);
-        set_flag(cpu, I, 1);
         write(cpu, 0x0100 + cpu->stkp, cpu->status);
+        cpu->stkp--;
 
-        // Grab the new PC from a fixed addr for interrupts
+        // Read new program counter location from fixed address
+        set_flag(cpu, I, 1);
         cpu->addr_abs = 0xFFFE;
-        u_int16_t low = read(cpu, cpu->addr_abs);
-        u_int16_t high = read(cpu, cpu->addr_abs + 1);
+        uint16_t lo = read(cpu, cpu->addr_abs + 0);
+        uint16_t hi = read(cpu, cpu->addr_abs + 1);
+        cpu->pc = (hi << 8) | lo;
 
-        cpu->pc = (high << 8) | low;
+        // IRQs take time
         cpu->cycles = 7;
     }
 }
@@ -125,10 +131,10 @@ void nmi(CPU6502 *cpu) {
     //Write status to stack
     set_flag(cpu, B, 0);
     set_flag(cpu, U, 1);
-    set_flag(cpu, I, 1);
     write(cpu, 0x0100 + cpu->stkp, cpu->status);
     cpu->stkp--;
 
+    set_flag(cpu, I, 1);
     //Update PC
     cpu->addr_abs = 0xFFFA;
     u_int16_t low = read(cpu, cpu->addr_abs + 0);
@@ -476,7 +482,6 @@ u_int8_t BPL(CPU6502* cpu){
 u_int8_t BRK(CPU6502* cpu){
     cpu->pc++;
 
-    set_flag(cpu, I, 1);
     write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
     cpu->stkp--;
     write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
@@ -486,6 +491,7 @@ u_int8_t BRK(CPU6502* cpu){
     write(cpu, 0x0100 + cpu->stkp, cpu->status);
     cpu->stkp--;
     set_flag(cpu, B, 0);
+    set_flag(cpu, I, 1);
 
     cpu->pc = (u_int16_t)read(cpu, 0xFFFE) | ((u_int16_t)read(cpu, 0xFFFF) << 8);
     return 0;
@@ -897,6 +903,7 @@ static char* hex(uint32_t n, uint8_t d){
 }
 
 void disassemble(CPU6502* cpu, uint16_t start, uint16_t stop){
+    //Again not memory safe!
     uint32_t addr = start;
     uint8_t value = 0x00;
     uint8_t low = 0x00;
