@@ -15,7 +15,7 @@ static bool irq_enable = false;
 static bool irq_update = false;
 static u_int16_t irq_counter = 0x0000;
 static u_int16_t irq_reload = 0x0000;
-static u_int8_t* vRAMStatic;
+static u_int8_t* vRAMStatic = NULL;
 
 bool mapper004_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t* data){
     if(addr >= 0x6000 && addr <= 0x7FFF){

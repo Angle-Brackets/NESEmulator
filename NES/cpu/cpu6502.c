@@ -96,22 +96,27 @@ void irq(CPU6502* cpu){
     if(get_flag(cpu, I) == 0){
         //We are now activating an interrupt, so we need to push PC to the stack
         //it takes 2 pushes as the PC is a 16 bit value.
-        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+        // Push the program counter to the stack. It's 16-bits dont
+        // forget so that takes two pushes
+        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
         cpu->stkp--;
-        write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+        write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
         cpu->stkp--;
 
-        //Now save all the status values to the stack
+        // Then Push the status register to the stack
         set_flag(cpu, B, 0);
         set_flag(cpu, U, 1);
-        set_flag(cpu, I, 1);
         write(cpu, 0x0100 + cpu->stkp, cpu->status);
-        // Grab the new PC from a fixed addr for interrupts
-        cpu->addr_abs = 0xFFFE;
-        u_int16_t low = read(cpu, cpu->addr_abs);
-        u_int16_t high = read(cpu, cpu->addr_abs + 1);
+        cpu->stkp--;
 
-        cpu->pc = (high << 8) | low;
+        // Read new program counter location from fixed address
+        set_flag(cpu, I, 1);
+        cpu->addr_abs = 0xFFFE;
+        uint16_t lo = read(cpu, cpu->addr_abs + 0);
+        uint16_t hi = read(cpu, cpu->addr_abs + 1);
+        cpu->pc = (hi << 8) | lo;
+
+        // IRQs take time
         cpu->cycles = 7;
     }
 }
@@ -126,10 +131,10 @@ void nmi(CPU6502 *cpu) {
     //Write status to stack
     set_flag(cpu, B, 0);
     set_flag(cpu, U, 1);
-    set_flag(cpu, I, 1);
     write(cpu, 0x0100 + cpu->stkp, cpu->status);
     cpu->stkp--;
 
+    set_flag(cpu, I, 1);
     //Update PC
     cpu->addr_abs = 0xFFFA;
     u_int16_t low = read(cpu, cpu->addr_abs + 0);
@@ -477,7 +482,6 @@ u_int8_t BPL(CPU6502* cpu){
 u_int8_t BRK(CPU6502* cpu){
     cpu->pc++;
 
-    set_flag(cpu, I, 1);
     write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
     cpu->stkp--;
     write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
@@ -487,6 +491,7 @@ u_int8_t BRK(CPU6502* cpu){
     write(cpu, 0x0100 + cpu->stkp, cpu->status);
     cpu->stkp--;
     set_flag(cpu, B, 0);
+    set_flag(cpu, I, 1);
 
     cpu->pc = (u_int16_t)read(cpu, 0xFFFE) | ((u_int16_t)read(cpu, 0xFFFF) << 8);
     return 0;
