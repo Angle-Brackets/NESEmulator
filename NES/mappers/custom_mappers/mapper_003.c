@@ -40,23 +40,6 @@ void mapper003_reset(MAPPER* mapper){
     chr_bank_select = 0;
 }
 
-enum MIRROR mapper003_mirror(MAPPER* mapper){
-    return HARDWARE;
-}
-
-bool mapper003_irq_state(MAPPER* mapper){
-    //Does nothing.
-    return false;
-}
-
-void mapper003_irq_clear(MAPPER* mapper){
-    //Does nothing.
-}
-
-void mapper003_scanline(MAPPER* mapper){
-    //Does nothing.
-}
-
 void create_mapper_003(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_banks){
     init_mapper(mapper, num_prg_banks, num_chr_banks);
 
@@ -64,9 +47,6 @@ void create_mapper_003(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_
     mapper->mapper_cpu_write = mapper003_cpu_write;
     mapper->mapper_ppu_read = mapper003_ppu_read;
     mapper->mapper_ppu_write = mapper003_ppu_write;
-    mapper->mapper_irq_state = mapper003_irq_state;
-    mapper->mapper_irq_clear = mapper003_irq_clear;
+
     mapper->reset = mapper003_reset;
-    mapper->mirror = mapper003_mirror;
-    mapper->scanline = mapper003_scanline;
 }
