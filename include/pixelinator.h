@@ -2,8 +2,10 @@
 #define PIXELINATOR_PIXELINATOR_H
 
 /**
- * UPDATED FOR VERSION 1.2.2
+ * UPDATED FOR VERSION 1.2.4
  *
+ * Changelog V1.2.4: Alpha blending support, sprites can be scaled, surfaces are easier to manipulate.
+ * Changelog V1.2.3: Added functions to resize the window and bitmap at runtime.
  * Changelog V1.2.2: Hotfix for global.h not being updated.
  * Changelog V1.2.1: Hotfix for initialize function in core.h!
  * Changelog V1.2: Added controller support. Supports most modern controllers and joysticks.
@@ -300,6 +302,13 @@ void render_begin(void);
  */
 void render_end(void);
 
+/**
+ * Change the window size forcefully. Both must be greater than zero, otherwise it will give a warning.
+ * @param width New width of window
+ * @param height New height of window.
+ */
+void set_window_size(i32 width, i32 height);
+
 //Core
 #define VERIFY_LOW_BOUND(x, min, name) {if(x < min){fprintf(stderr, "Illegal value for %s passed.\n", name); return 1;}} //Validates if an entered value is not lower than a given value. Can't check a max because multiple monitors might screw with it too much.
 
@@ -366,12 +375,21 @@ sprite_t* create_sprite(i32 x, i32 y, u32 width, u32 height, sprite_sheet* sheet
 
 /**
  * Creates a sprite sheet that can be used for multiple sprites to reference
- * @param file_path file path to sprite sheet (currently only PNGs are supported)
- * @param ignored_colors colors to ignore when reading from the sprite sheet
+ * @param file_path file path to sprite sheet
+ * @param ignored_colors colors to ignore when reading from the sprite sheet (not sensitive to alpha)
  * @param ignored_colors_len length of ignored colors array
  * @return A new sprite sheet, NULL on failure
  */
 sprite_sheet* create_sprite_sheet(const char* file_path, SDL_Color* ignored_colors, u32 ignored_colors_len);
+
+/**
+ * Creates a bitmap sprite from a source image.
+ * @param x X position of the sprite
+ * @param y Y Position of the sprite
+ * @param path File path to source image to be loaded.
+ * @return A new sprite, NULL on failure
+ */
+sprite_t* create_sprite_from_img(i32 x, i32 y, const char* path);
 
 /**
  * Update the provided sprite by drawing pixels from the sprite sheet.
@@ -437,7 +455,8 @@ void set_shape_fill(SDL_Color* color);
 void fill_background(SDL_Color* color);
 
 /**
- * Draws a pixel to the screen at the x, y position
+ * Draws a pixel to the screen at the x, y position.\n
+ * This uses an additive alpha to combine colors for alpha \< 255.
  * @param color
  * @param x
  * @param y
@@ -447,15 +466,18 @@ void draw_pixel(SDL_Color* color, i32 x, i32 y);
 /**
  * Draws a sprite to the bitmap.
  * @param sprite
+ * @param scale size to rescale it to.
  */
-void draw_sprite_to_bitmap(sprite_t* sprite);
+void draw_sprite_to_bitmap(sprite_t* sprite, u32 scale);
 
 /**
- * Draw pixels from a given texture into the bitmap
+ * Draw pixels from a given texture into the bitmap (Pixels out of bounds are automatically cropped).
  * Does not necessarily clear the entire bitmap if the width and height of the texture aren't the same as the Bitmap!
- * @param surface
+ * @param surface SDL Surface to draw pixels from.
+ * @param x x coordinate to draw the surface at.
+ * @param y y coordinate to draw the surface at.
  */
-void draw_pixels_from_surface(SDL_Surface* surface);
+void draw_pixels_from_surface(SDL_Surface* surface, i32 x, i32 y);
 
 /**
  * Gets the pixel located in the BITMAP at (x,y) [x and y are not necessarily screen space coordinates, they relate to the bitmap only]
@@ -517,6 +539,15 @@ void initialize_bitmap(u32 width, u32 height);
  * Draw the bitmap to the screen, the order in which you call this DOES matter. (For example, render the bitmap, then place text so you can see it!)
  */
 void draw_bitmap();
+
+/**
+ * Resize the bitmap. This clears the bitmap, so be careful!\n
+ * This function is <b>expensive</b>! Do not call it often. \n
+ * (It is recommended you update the size of the bitmap THEN update the size of the window to avoid blanking out the screen!)
+ * @param width New width of bitmap
+ * @param height New height of bitmap
+ */
+void resize_bitmap(u32 width, u32 height);
 
 //Global texture used for drawing bitmap graphics
 extern SDL_Texture* bitmap;

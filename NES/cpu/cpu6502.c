@@ -98,9 +98,9 @@ void irq(CPU6502* cpu){
         //it takes 2 pushes as the PC is a 16 bit value.
         // Push the program counter to the stack. It's 16-bits dont
         // forget so that takes two pushes
-        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
+        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
         cpu->stkp--;
-        write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
+        write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
         cpu->stkp--;
 
         // Then Push the status register to the stack
@@ -123,9 +123,9 @@ void irq(CPU6502* cpu){
 
 void nmi(CPU6502 *cpu) {
     //Similar affair to above, but this interrupt can't be ignored.
-    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & 0x00FF);
+    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
     cpu->stkp--;
-    write(cpu, 0x0100 + cpu->stkp, cpu->pc & 0x00FF);
+    write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
     cpu->stkp--;
 
     //Write status to stack

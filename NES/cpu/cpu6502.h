@@ -10,7 +10,7 @@ typedef struct Bus Bus;
  * Constant struct used to represent possible each instruction.
  */
 const struct INSTRUCTION {
-    char name[3];
+    char name[4];
     u_int8_t (*operation)(struct CPU6502* cpu);
     u_int8_t (*addr_mode)(struct CPU6502* cpu);
     u_int8_t cycles;

@@ -1,0 +1,11 @@
+#ifndef NESEMULATOR_EMULATOR_STATE_H
+#define NESEMULATOR_EMULATOR_STATE_H
+
+enum Emulator_State {
+    TITLE_SCREEN,
+    MAIN_MENU,
+    NES
+};
+
+
+#endif //NESEMULATOR_EMULATOR_STATE_H
