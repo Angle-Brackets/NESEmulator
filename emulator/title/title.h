@@ -17,6 +17,8 @@ typedef struct Title_Sprite {
     u32 current_animation; //Current animation we're playing.
     u32 animations_len;
     u32 animation_capacity;
+    u32 current_frame; //Current frame the sprite is on. Only iterated when frame timer reaches the value stated by anim_frame_len.
+    u32 frame_timer; //Amount of frames that the current frame has been held on. Iterated by 1 in each call to play_animation()
 } title_sprite_t;
 
 title_sprite_t create_title_sprite(sprite_sheet* sheet, i32 x, i32 y, u32 sheet_x, u32 sheet_y, u32 width, u32 height, u32 num_animations);

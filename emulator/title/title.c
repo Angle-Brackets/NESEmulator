@@ -6,6 +6,8 @@ title_sprite_t create_title_sprite(sprite_sheet* sheet, i32 x, i32 y, u32 sheet_
             .animations = malloc(sizeof(animation_t) * num_animations),
             .current_animation = 0,
             .animations_len = 0,
+            .current_frame = 0,
+            .frame_timer = 0,
             .animation_capacity = num_animations
     };
 
@@ -43,8 +45,32 @@ void play_animation(title_sprite_t* sprite, u32 animation_id){
     }
 
 
+    if(animation_id != sprite->current_animation){
+        //New animation swap
+        sprite->current_animation = animation_id;
+        sprite->current_frame = 0;
+        sprite->frame_timer = 0;
+    }
+
+    //Continue animation
+    update_sprite_from_spritesheet(
+            sprite->sprite,
+            sprite->animations[animation_id].sheet_x + (sprite->animations[animation_id].sheet_offset_x * sprite->current_frame),
+            sprite->animations[animation_id].sheet_y + (sprite->animations[animation_id].sheet_offset_y * sprite->current_frame),
+            0,
+            0,
+            sprite->sprite->width,
+            sprite->sprite->height
+    );
 
 
+    sprite->frame_timer++;
+    if(sprite->frame_timer % sprite->animations[sprite->current_animation].anim_frame_len == 0 && sprite->frame_timer > 0){
+        sprite->current_frame++;
+        sprite->frame_timer = 0;
+    }
+
+    sprite->current_frame %= sprite->animations[sprite->current_animation].anim_frames;
 }
 
 void free_title_sprite(title_sprite_t* sprite){
