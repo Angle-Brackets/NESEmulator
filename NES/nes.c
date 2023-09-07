@@ -71,7 +71,7 @@ void initialize_nes(bool debug, enum Emulator_State* emulator_state){
         //initialize(NES_WIDTH * 4, NES_HEIGHT * 4, NES_WIDTH, NES_HEIGHT, 60, 15, 1, MULTITHREADING_ENABLED | BITMAP_ACTIVE | IGNORE_FOCUS, 0, draw);
     }
 
-    initialize_cartridge(&cart, "../roms/kirby.nes");
+    initialize_cartridge(&cart, "../roms/smb3.nes");
     insert_cartridge(&nes, &cart);
     bus_reset(&nes);
     *emulator_state = NES;
