@@ -1,3 +1,4 @@
+#include <time.h>
 #include "title.h"
 
 static sprite_t *play_btn = NULL, *settings_btn = NULL;
@@ -5,8 +6,11 @@ static sprite_sheet* title_sprite_sheet = NULL;
 static PIX_Font* title_font = NULL;
 static SDL_Color bad_colors[3] = {{116, 154, 212, 255}, {41, 88, 124, 255}, {255,0,215,255}};
 
+
+
 void initialize_title(){
     title_font = load_pix_font("../assets/pixel-emulator-font/PixelEmulator-xq08.ttf", 50, (SDL_Color){255,255,255,255});
+    srand(time(NULL));
     if(play_btn == NULL){
         play_btn = create_sprite_from_img(0, 0, "../assets/icons/ButtonPlay.png");
         play_btn->x = (global.render.width / 2) - (play_btn->width / 2) * BUTTON_SCALE;
@@ -171,6 +175,7 @@ void draw_title_background(){
 }
 
 void draw_title_sprites(){
+    //WIP, I will add the rest later.
     static title_sprite_t mario1 = {0};
     static title_sprite_t link = {0};
     static title_sprite_t kirby = {0};
@@ -215,14 +220,53 @@ void draw_title_sprites(){
         add_animation(&shell, 4, 12, 16*3+1, 40, 16, 0); //Shell Spinning
     }
 
-    if(!kirby.rendered && (f32)rand() / RAND_MAX <= 0.01 && global.time.frame_count == 0){
+    //Rolls for if the sprite should be rendered.
+    if(!kirby.rendered && !kirby_parasol.rendered && (f32)rand() / RAND_MAX <= 0.05 && global.time.frame_count == 0){
         kirby.rendered = true;
+        kirby.sprite->x = -(i32)kirby.sprite->width;
+        kirby.sprite->y = MAX(rand() % global.render.height - kirby.sprite->height, kirby.sprite->height);
+    }
 
+    if(!kirby_parasol.rendered && !kirby.rendered && (f32)rand() / RAND_MAX <= 0.05 && global.time.frame_count == 0){
+        kirby_parasol.rendered = true;
+        kirby_parasol.sprite->x = -(i32)kirby_parasol.sprite->width;
+        kirby_parasol.sprite->y = MAX(rand() % global.render.height - kirby_parasol.sprite->height, kirby_parasol.sprite->height);
     }
-    else {
-        kirby.rendered = false;
+
+    if(!mario1.rendered && (f32)rand() / RAND_MAX <= 0.05 && global.time.frame_count == 0){
+        mario1.rendered = true;
+        mario1.sprite->x = -(i32)mario1.sprite->width;
+        mario1.sprite->y = MAX(rand() % global.render.height - mario1.sprite->height, mario1.sprite->height);
     }
-    DRAW_BOUNDED(kirby, 4)
+
+    if(!link.rendered && (f32)rand() / RAND_MAX <= 0.05 && global.time.frame_count == 0){
+        link.rendered = true;
+        link.sprite->x = MAX(rand() % global.render.width - link.sprite->width, link.sprite->width);
+        link.sprite->y = -(i32)link.sprite->height;
+    }
+
+
+
+    if(kirby.rendered){
+        kirby.sprite->x += 200 * global.time.delta;
+        DRAW_BOUNDED(kirby, 4)
+    }
+
+    if(kirby_parasol.rendered){
+        kirby_parasol.sprite->x += 180 * global.time.delta;
+        DRAW_BOUNDED(kirby_parasol, 4)
+    }
+
+    if(mario1.rendered){
+        mario1.sprite->x += 210 * global.time.delta;
+        DRAW_BOUNDED(mario1, 4)
+    }
+
+    if(link.rendered){
+        link.sprite->y += 160 * global.time.delta;
+        DRAW_BOUNDED(link, 4)
+    }
+
 }
 
 void draw_title(){

@@ -12,6 +12,7 @@ struct Emulator_State {
     u32 frames_elapsed;
 };
 
+//The state of the emulator!
 extern struct Emulator_State emulator_state;
 
 #endif //NESEMULATOR_EMULATOR_STATE_H
