@@ -1,11 +1,17 @@
 #ifndef NESEMULATOR_EMULATOR_STATE_H
 #define NESEMULATOR_EMULATOR_STATE_H
+#include "pixelinator.h"
 
-enum Emulator_State {
-    TITLE_SCREEN,
-    MAIN_MENU,
-    NES
+struct Emulator_State {
+    enum {
+        TITLE_SCREEN,
+        MAIN_MENU,
+        NES
+    } state;
+
+    u32 frames_elapsed;
 };
 
+extern struct Emulator_State emulator_state;
 
 #endif //NESEMULATOR_EMULATOR_STATE_H

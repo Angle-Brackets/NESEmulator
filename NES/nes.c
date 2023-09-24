@@ -10,7 +10,7 @@ static u32 selected_palette = 0;
 
 SDL_Color Black = {0,0,0,255};
 SDL_Color White = {255,0,255,255};
-SDL_Color BG = {186,148,108};
+SDL_Color BG = {186,148,108,255};
 SDL_Color RED = {255,0,0,255};
 SDL_Color GREEN = {0,255,0,255};
 
@@ -60,7 +60,7 @@ void draw_cpu(i32 x, i32 y){
     render_text(NULL, x  + 178, y , RIGHT, "C");
 }
 
-void initialize_nes(bool debug, enum Emulator_State* emulator_state){
+void initialize_nes(bool debug){
     debug_enabled = debug;
     if(debug_enabled){
         //Debug output
@@ -71,10 +71,11 @@ void initialize_nes(bool debug, enum Emulator_State* emulator_state){
         //initialize(NES_WIDTH * 4, NES_HEIGHT * 4, NES_WIDTH, NES_HEIGHT, 60, 15, 1, MULTITHREADING_ENABLED | BITMAP_ACTIVE | IGNORE_FOCUS, 0, draw);
     }
 
+    resize_bitmap(NES_WIDTH, NES_HEIGHT);
     initialize_cartridge(&cart, "../roms/smb3.nes");
     insert_cartridge(&nes, &cart);
     bus_reset(&nes);
-    *emulator_state = NES;
+    emulation_active = true;
 }
 
 void run_nes_emulation(){
