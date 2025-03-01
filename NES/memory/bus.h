@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "cartridge.h"
 #include "../emuconsts.h"
 #include "../cpu/cpu6502.h"
@@ -11,6 +12,7 @@
 //Forward Declaring this so we can avoid a circular logic error.
 typedef struct CPU6502 CPU6502;
 typedef struct PPU2C02 PPU2C02;
+typedef const struct INSTRUCTION INSTRUCTION;
 
 /**
  * Bus for a byte addressable CPU
@@ -22,8 +24,8 @@ typedef struct Bus {
 
     uint8_t controller[2];
     uint8_t controller_state[2];
-    u_int8_t cpu_ram[RAM_SIZE];
-    u_int32_t system_clocks; //Number of clocks the system has gone through
+    uint8_t cpu_ram[RAM_SIZE];
+    uint32_t system_clocks; //Number of clocks the system has gone through
 
     //DMA
     bool dma_transfer; //Is a DMA happening?
@@ -46,7 +48,7 @@ void clear_memory(Bus* bus);
  * @param addr Address 0x0000 - 0xFFFF (might change later)
  * @param data Byte of data
  */
-void bus_cpu_write(Bus* bus, u_int16_t addr, u_int8_t data);
+void bus_cpu_write(Bus* bus, uint16_t addr, uint8_t data);
 
 /**
  * Read a byte from the given address
@@ -55,7 +57,7 @@ void bus_cpu_write(Bus* bus, u_int16_t addr, u_int8_t data);
  * @param readOnly by default should be false, says if the memory is read only.
  * @return A byte at the given valid address.
  */
-u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly);
+uint8_t bus_cpu_read(Bus* bus, uint16_t addr, bool readOnly);
 
 //System Interactions through the Bus
 

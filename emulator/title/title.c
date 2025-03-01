@@ -7,7 +7,6 @@ static PIX_Font* title_font = NULL;
 static SDL_Color bad_colors[3] = {{116, 154, 212, 255}, {41, 88, 124, 255}, {255,0,215,255}};
 
 
-
 void initialize_title(){
     title_font = load_pix_font("../assets/pixel-emulator-font/PixelEmulator-xq08.ttf", 50, (SDL_Color){255,255,255,255});
     srand(time(NULL));

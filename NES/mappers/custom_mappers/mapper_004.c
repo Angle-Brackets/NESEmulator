@@ -1,23 +1,23 @@
 #include "mapper_004.h"
 
 //Internal variables
-static u_int8_t target_reg = 0x00;
+static uint8_t target_reg = 0x00;
 static bool prg_bank_mode = false;
 static bool chr_inversion = false;
 static enum MIRROR mirrormode = HORIZONTAL;
 
-static u_int32_t registers[8];
-static u_int32_t chr_bank[8];
-static u_int32_t prg_bank[4];
+static uint32_t registers[8];
+static uint32_t chr_bank[8];
+static uint32_t prg_bank[4];
 
 static bool irq_active = false;
 static bool irq_enable = false;
 static bool irq_update = false;
-static u_int16_t irq_counter = 0x0000;
-static u_int16_t irq_reload = 0x0000;
-static u_int8_t* vRAMStatic = NULL;
+static uint16_t irq_counter = 0x0000;
+static uint16_t irq_reload = 0x0000;
+static uint8_t* vRAMStatic = NULL;
 
-bool mapper004_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t* data){
+bool mapper004_cpu_read(MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr, uint8_t* data){
     if(addr >= 0x6000 && addr <= 0x7FFF){
         *mapped_addr = 0xFFFFFFFF;
         *data = vRAMStatic[addr & 0x1FFF];
@@ -44,7 +44,7 @@ bool mapper004_cpu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, 
     return false;
 }
 
-bool mapper004_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t data){
+bool mapper004_cpu_write(MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr, uint8_t data){
     if(addr >= 0x6000 && addr <= 0x7FFF){
         *mapped_addr = 0xFFFFFFFF;
         vRAMStatic[addr & 0x1FFF] = data;
@@ -136,7 +136,7 @@ bool mapper004_cpu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr,
     return false;
 }
 
-bool mapper_004_ppu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
+bool mapper_004_ppu_read(MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr){
     if(addr >= 0x0000 && addr <= 0x03FF){
         *mapped_addr = chr_bank[0] + (addr & 0x03FF);
         return true;
@@ -173,7 +173,7 @@ bool mapper_004_ppu_read(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr)
     return false;
 }
 
-bool mapper_004_ppu_write(MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr){
+bool mapper_004_ppu_write(MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr){
     return false;
 }
 
@@ -228,7 +228,7 @@ void mapper004_scanline(MAPPER* mapper){
     }
 }
 
-void create_mapper_004(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_banks){
+void create_mapper_004(MAPPER* mapper, uint8_t num_prg_banks, uint8_t num_chr_banks){
     init_mapper(mapper, num_prg_banks, num_chr_banks);
     vRAMStatic = calloc(32 * 1024, sizeof(uint8_t));
 

@@ -24,7 +24,7 @@ void draw() {
 
 i32 main(){
     i32 width, height;
-    initialize(1920, 1080, 1920, 1080, 60, 15, 1, MULTITHREADING_ENABLED | BITMAP_ACTIVE | IGNORE_FOCUS, 0, draw);
+    initialize(2560, 1440, 2560, 1440, 2000, 15, 1, MULTITHREADING_ENABLED | BITMAP_ACTIVE | DISABLE_VSYNC, 0, draw);
     SDL_SetWindowFullscreen(global.render.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
     SDL_GetWindowSize(global.render.window, &width, &height);
     resize_bitmap(width, height);

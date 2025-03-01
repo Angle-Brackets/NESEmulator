@@ -47,7 +47,7 @@ CPU6502* initialize_cpu(Bus* bus){
     return cpu;
 }
 
-u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {
+uint8_t get_flag(CPU6502* cpu, enum FLAGS6502 f) {
     return ((cpu->status & f) > 0) ? 1 : 0;
 }
 
@@ -60,19 +60,19 @@ void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v) {
     }
 }
 
-void write(CPU6502* cpu, u_int16_t addr, u_int8_t data){
+void write_cpu(CPU6502* cpu, uint16_t addr, uint8_t data){
     bus_cpu_write(cpu->bus, addr, data);
 }
 
-u_int8_t read(CPU6502* cpu, u_int16_t addr){
+uint8_t read_cpu(CPU6502* cpu, uint16_t addr){
     return bus_cpu_read(cpu->bus, addr, false);
 }
 
 void cpu_reset(CPU6502* cpu){
     // Get the new address for PC
     cpu->addr_abs = 0xFFFC;
-    u_int16_t low = read(cpu, cpu->addr_abs + 0);
-    u_int16_t high = read(cpu, cpu->addr_abs + 1);
+    uint16_t low = read_cpu(cpu, cpu->addr_abs + 0);
+    uint16_t high = read_cpu(cpu, cpu->addr_abs + 1);
 
     //Set it!
     cpu->pc = (high << 8) | low;
@@ -98,22 +98,22 @@ void irq(CPU6502* cpu){
         //it takes 2 pushes as the PC is a 16 bit value.
         // Push the program counter to the stack. It's 16-bits dont
         // forget so that takes two pushes
-        write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+        write_cpu(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
         cpu->stkp--;
-        write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+        write_cpu(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
         cpu->stkp--;
 
         // Then Push the status register to the stack
         set_flag(cpu, B, 0);
         set_flag(cpu, U, 1);
-        write(cpu, 0x0100 + cpu->stkp, cpu->status);
+        write_cpu(cpu, 0x0100 + cpu->stkp, cpu->status);
         cpu->stkp--;
 
-        // Read new program counter location from fixed address
+        // read_cpu new program counter location from fixed address
         set_flag(cpu, I, 1);
         cpu->addr_abs = 0xFFFE;
-        uint16_t lo = read(cpu, cpu->addr_abs + 0);
-        uint16_t hi = read(cpu, cpu->addr_abs + 1);
+        uint16_t lo = read_cpu(cpu, cpu->addr_abs + 0);
+        uint16_t hi = read_cpu(cpu, cpu->addr_abs + 1);
         cpu->pc = (hi << 8) | lo;
 
         // IRQs take time
@@ -123,34 +123,34 @@ void irq(CPU6502* cpu){
 
 void nmi(CPU6502 *cpu) {
     //Similar affair to above, but this interrupt can't be ignored.
-    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+    write_cpu(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
     cpu->stkp--;
-    write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
     cpu->stkp--;
 
     //Write status to stack
     set_flag(cpu, B, 0);
     set_flag(cpu, U, 1);
-    write(cpu, 0x0100 + cpu->stkp, cpu->status);
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->status);
     cpu->stkp--;
 
     set_flag(cpu, I, 1);
     //Update PC
     cpu->addr_abs = 0xFFFA;
-    u_int16_t low = read(cpu, cpu->addr_abs + 0);
-    u_int16_t high = read(cpu, cpu->addr_abs + 1);
+    uint16_t low = read_cpu(cpu, cpu->addr_abs + 0);
+    uint16_t high = read_cpu(cpu, cpu->addr_abs + 1);
     cpu->pc = (high << 8) | low;
 
     cpu->cycles = 8;
 }
 
-void clock(CPU6502* cpu){
+void cpu_clock(CPU6502* cpu){
     //This is not a microcode accurate emulation of the hardware. All we're doing is effectively delaying the code
     //By some amount of clock cycles to emulate the microcode at a high level.
 
     if(cpu->cycles == 0){
-        //Read the next instruction byte
-        cpu->opcode = read(cpu, cpu->pc);
+        //read_cpu the next instruction byte
+        cpu->opcode = read_cpu(cpu, cpu->pc);
 
         //Always set this to 1 (Not sure why)
         set_flag(cpu, U, 1);
@@ -162,10 +162,10 @@ void clock(CPU6502* cpu){
         cpu->cycles = cpu->lookup[cpu->opcode].cycles;
 
         //Grab the immediate data using the requisite addressing mode
-        u_int8_t cycle1 = (cpu->lookup[cpu->opcode].addr_mode)(cpu);
+        uint8_t cycle1 = (cpu->lookup[cpu->opcode].addr_mode)(cpu);
 
         //Perform Operation
-        u_int8_t cycle2 = (cpu->lookup[cpu->opcode].operation)(cpu);
+        uint8_t cycle2 = (cpu->lookup[cpu->opcode].operation)(cpu);
 
         //Number of cycles might have been altered by the instruction (page swapping for example)
         cpu->cycles += (cycle1 & cycle2);
@@ -177,9 +177,9 @@ void clock(CPU6502* cpu){
     cpu->cycles--;
 }
 
-u_int8_t fetch(CPU6502* cpu){
+uint8_t fetch(CPU6502* cpu){
     if(cpu->lookup[cpu->opcode].addr_mode != IMP){
-        cpu->fetched = read(cpu, cpu->addr_abs);
+        cpu->fetched = read_cpu(cpu, cpu->addr_abs);
     }
     return cpu->fetched;
 }
@@ -189,39 +189,39 @@ u_int8_t fetch(CPU6502* cpu){
  * These handle how the CPU is able to access memory, which is indicated by the particular instruction used.
  */
 
-u_int8_t IMP(CPU6502* cpu){
+uint8_t IMP(CPU6502* cpu){
     cpu->fetched = cpu->a;
     return 0;
 }
 
-u_int8_t IMM(CPU6502* cpu){
+uint8_t IMM(CPU6502* cpu){
     cpu->addr_abs = cpu->pc++;
     return 0;
 }
 
-u_int8_t ZP0(CPU6502* cpu){
-    cpu->addr_abs = read(cpu, cpu->pc);
+uint8_t ZP0(CPU6502* cpu){
+    cpu->addr_abs = read_cpu(cpu, cpu->pc);
     cpu->pc++;
     cpu->addr_abs &= LOW_BIT_MASK;
     return 0;
 }
 
-u_int8_t ZPX(CPU6502* cpu){
-    cpu->addr_abs = read(cpu, cpu->pc) + cpu->x;
+uint8_t ZPX(CPU6502* cpu){
+    cpu->addr_abs = read_cpu(cpu, cpu->pc) + cpu->x;
     cpu->pc++;
     cpu->addr_abs &= LOW_BIT_MASK;
     return 0;
 }
 
-u_int8_t ZPY(CPU6502* cpu){
-    cpu->addr_abs = read(cpu, cpu->pc) + cpu->y;
+uint8_t ZPY(CPU6502* cpu){
+    cpu->addr_abs = read_cpu(cpu, cpu->pc) + cpu->y;
     cpu->pc++;
     cpu->addr_abs &= LOW_BIT_MASK;
     return 0;
 }
 
-u_int8_t REL(CPU6502* cpu){
-    cpu->addr_rel = read(cpu, cpu->pc);
+uint8_t REL(CPU6502* cpu){
+    cpu->addr_rel = read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
     if(cpu->addr_rel & SIGN_MASK){
@@ -230,20 +230,20 @@ u_int8_t REL(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t ABS(CPU6502* cpu){
-    u_int16_t low = read(cpu, cpu->pc);
+uint8_t ABS(CPU6502* cpu){
+    uint16_t low = read_cpu(cpu, cpu->pc);
     cpu->pc++;
-    u_int16_t high = read(cpu, cpu->pc);
+    uint16_t high = read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
     cpu->addr_abs = (high << 8) | low;
     return 0;
 }
 
-u_int8_t ABX(CPU6502* cpu){
-    u_int16_t low = read(cpu, cpu->pc);
+uint8_t ABX(CPU6502* cpu){
+    uint16_t low = read_cpu(cpu, cpu->pc);
     cpu->pc++;
-    u_int16_t high = read(cpu, cpu->pc);
+    uint16_t high = read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
     cpu->addr_abs = (high << 8) | low;
@@ -255,10 +255,10 @@ u_int8_t ABX(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t ABY(CPU6502* cpu) {
-    u_int16_t low = read(cpu, cpu->pc);
+uint8_t ABY(CPU6502* cpu) {
+    uint16_t low = read_cpu(cpu, cpu->pc);
     cpu->pc++;
-    u_int16_t high = read(cpu, cpu->pc);
+    uint16_t high = read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
     cpu->addr_abs = (high << 8) | low;
@@ -271,43 +271,43 @@ u_int8_t ABY(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t IND(CPU6502* cpu) {
-    u_int16_t low_address = read(cpu, cpu->pc);
+uint8_t IND(CPU6502* cpu) {
+    uint16_t low_address = read_cpu(cpu, cpu->pc);
     cpu->pc++;
-    u_int16_t high_address = read(cpu, cpu->pc);
+    uint16_t high_address = read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
-    u_int16_t address = (high_address << 8) | low_address;
+    uint16_t address = (high_address << 8) | low_address;
 
     //THIS IS ACTUALLY A BUG IN THE 6502 regarding page boundaries not being swapped correctly.
     if(low_address == LOW_BIT_MASK){
-        cpu->addr_abs = (read(cpu, address & HIGH_BIT_MASK) << 8) | read(cpu, address + 0);
+        cpu->addr_abs = (read_cpu(cpu, address & HIGH_BIT_MASK) << 8) | read_cpu(cpu, address + 0);
     }
     else {
-        cpu->addr_abs = (read(cpu, address + 1) << 8) | read(cpu, address + 0);
+        cpu->addr_abs = (read_cpu(cpu, address + 1) << 8) | read_cpu(cpu, address + 0);
     }
 
     return 0;
 }
 
-u_int8_t IZX(CPU6502* cpu){
-    u_int16_t temp =  read(cpu, cpu->pc);
+uint8_t IZX(CPU6502* cpu){
+    uint16_t temp =  read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
-    u_int16_t low = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x) & LOW_BIT_MASK);
-    u_int16_t high = read(cpu, (u_int16_t)(temp + (u_int16_t)cpu->x + 1) & LOW_BIT_MASK);
+    uint16_t low = read_cpu(cpu, (uint16_t)(temp + (uint16_t)cpu->x) & LOW_BIT_MASK);
+    uint16_t high = read_cpu(cpu, (uint16_t)(temp + (uint16_t)cpu->x + 1) & LOW_BIT_MASK);
 
     cpu->addr_abs = (high << 8) | low;
 
     return 0;
 }
 
-u_int8_t IZY(CPU6502* cpu) {
-    u_int16_t temp = read(cpu, cpu->pc);
+uint8_t IZY(CPU6502* cpu) {
+    uint16_t temp = read_cpu(cpu, cpu->pc);
     cpu->pc++;
 
-    u_int16_t low = read(cpu, temp & LOW_BIT_MASK);
-    u_int16_t high = read(cpu, (temp + 1) & LOW_BIT_MASK);
+    uint16_t low = read_cpu(cpu, temp & LOW_BIT_MASK);
+    uint16_t high = read_cpu(cpu, (temp + 1) & LOW_BIT_MASK);
 
     cpu->addr_abs = (high << 8) | low;
     cpu->addr_abs += cpu->y;
@@ -322,12 +322,12 @@ u_int8_t IZY(CPU6502* cpu) {
  * Opcodes available in the 6502 Processor, certain invalid opcodes are not allowed.
  */
 
-u_int8_t ADC(CPU6502* cpu){
+uint8_t ADC(CPU6502* cpu){
     //Grab the fetched value stored in our registers
     fetch(cpu);
 
     //The add is performed with 16 bits to account for overflow.
-    cpu->temp = (u_int16_t)cpu->a + (u_int16_t)cpu->fetched + (u_int16_t)get_flag(cpu, C);
+    cpu->temp = (uint16_t)cpu->a + (uint16_t)cpu->fetched + (uint16_t)get_flag(cpu, C);
 
     //Carry bit is set if the sum we generate is over 256
     set_flag(cpu, C, cpu->temp > 255);
@@ -349,13 +349,13 @@ u_int8_t ADC(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t SBC(CPU6502* cpu){
+uint8_t SBC(CPU6502* cpu){
     fetch(cpu);
 
-    u_int16_t value = ((u_int16_t)cpu->fetched) ^ LOW_BIT_MASK;
+    uint16_t value = ((uint16_t)cpu->fetched) ^ LOW_BIT_MASK;
 
     //Now everything is the same as addition due to math!
-    cpu->temp = (u_int16_t)cpu->a + (u_int16_t)value + (u_int16_t)get_flag(cpu, C);
+    cpu->temp = (uint16_t)cpu->a + (uint16_t)value + (uint16_t)get_flag(cpu, C);
 
     set_flag(cpu, C, cpu->temp & HIGH_BIT_MASK);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0);
@@ -366,7 +366,7 @@ u_int8_t SBC(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t AND(CPU6502* cpu){
+uint8_t AND(CPU6502* cpu){
     fetch(cpu);
     cpu->a = cpu->a & cpu->fetched;
     set_flag(cpu, Z, cpu->a == ZERO);
@@ -374,9 +374,9 @@ u_int8_t AND(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t ASL(CPU6502* cpu){
+uint8_t ASL(CPU6502* cpu){
     fetch(cpu);
-    cpu->temp = (u_int16_t)cpu->fetched << 1;
+    cpu->temp = (uint16_t)cpu->fetched << 1;
     set_flag(cpu, C, (cpu->temp & HIGH_BIT_MASK) > 0);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == ZERO);
     set_flag(cpu, N, cpu->temp & SIGN_MASK);
@@ -385,13 +385,13 @@ u_int8_t ASL(CPU6502* cpu){
         cpu->a = cpu->temp & LOW_BIT_MASK;
     }
     else{
-        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+        write_cpu(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
     }
 
     return 0;
 }
 
-u_int8_t BCC(CPU6502* cpu){
+uint8_t BCC(CPU6502* cpu){
     if(get_flag(cpu, C) == 0){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -404,7 +404,7 @@ u_int8_t BCC(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BCS(CPU6502* cpu){
+uint8_t BCS(CPU6502* cpu){
     if(get_flag(cpu, C) == 1){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -417,7 +417,7 @@ u_int8_t BCS(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BEQ(CPU6502* cpu){
+uint8_t BEQ(CPU6502* cpu){
     if(get_flag(cpu, Z) == 1){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -430,7 +430,7 @@ u_int8_t BEQ(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BIT(CPU6502* cpu){
+uint8_t BIT(CPU6502* cpu){
     fetch(cpu);
     cpu->temp = cpu->a & cpu->fetched;
 
@@ -440,7 +440,7 @@ u_int8_t BIT(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BMI(CPU6502* cpu){
+uint8_t BMI(CPU6502* cpu){
     if(get_flag(cpu, N) == 1){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -453,7 +453,7 @@ u_int8_t BMI(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BNE(CPU6502* cpu){
+uint8_t BNE(CPU6502* cpu){
     if(get_flag(cpu, Z) == 0){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -466,7 +466,7 @@ u_int8_t BNE(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BPL(CPU6502* cpu){
+uint8_t BPL(CPU6502* cpu){
     if(get_flag(cpu, N) == 0){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -479,25 +479,25 @@ u_int8_t BPL(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BRK(CPU6502* cpu){
+uint8_t BRK(CPU6502* cpu){
     cpu->pc++;
 
-    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+    write_cpu(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
     cpu->stkp--;
-    write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
     cpu->stkp--;
 
     set_flag(cpu, B, 1);
-    write(cpu, 0x0100 + cpu->stkp, cpu->status);
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->status);
     cpu->stkp--;
     set_flag(cpu, B, 0);
     set_flag(cpu, I, 1);
 
-    cpu->pc = (u_int16_t)read(cpu, 0xFFFE) | ((u_int16_t)read(cpu, 0xFFFF) << 8);
+    cpu->pc = (uint16_t)read_cpu(cpu, 0xFFFE) | ((uint16_t)read_cpu(cpu, 0xFFFF) << 8);
     return 0;
 }
 
-u_int8_t BVC(CPU6502* cpu){
+uint8_t BVC(CPU6502* cpu){
     if(get_flag(cpu, V) == 0){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -510,7 +510,7 @@ u_int8_t BVC(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t BVS(CPU6502* cpu){
+uint8_t BVS(CPU6502* cpu){
     if(get_flag(cpu, V) == 1){
         cpu->cycles++;
         cpu->addr_abs = cpu->pc + cpu->addr_rel;
@@ -523,30 +523,30 @@ u_int8_t BVS(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t CLC(CPU6502* cpu){
+uint8_t CLC(CPU6502* cpu){
     set_flag(cpu, C, false);
     return 0;
 }
 
-u_int8_t CLD(CPU6502* cpu){
+uint8_t CLD(CPU6502* cpu){
     set_flag(cpu, D, false);
     return 0;
 }
 
-u_int8_t CLI(CPU6502* cpu){
+uint8_t CLI(CPU6502* cpu){
     set_flag(cpu, I, false);
     return 0;
 }
 
-u_int8_t CLV(CPU6502* cpu){
+uint8_t CLV(CPU6502* cpu){
     set_flag(cpu, V, false);
     return 0;
 }
 
-u_int8_t CMP(CPU6502* cpu){
+uint8_t CMP(CPU6502* cpu){
     fetch(cpu);
 
-    cpu->temp = (u_int16_t)cpu->a - (u_int16_t)cpu->fetched;
+    cpu->temp = (uint16_t)cpu->a - (uint16_t)cpu->fetched;
 
     set_flag(cpu, C, cpu->a >= cpu->fetched);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
@@ -554,10 +554,10 @@ u_int8_t CMP(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t CPX(CPU6502* cpu) {
+uint8_t CPX(CPU6502* cpu) {
     fetch(cpu);
 
-    cpu->temp = (u_int16_t)cpu->x - (u_int16_t)cpu->fetched;
+    cpu->temp = (uint16_t)cpu->x - (uint16_t)cpu->fetched;
 
     set_flag(cpu, C, cpu->x >= cpu->fetched);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
@@ -565,10 +565,10 @@ u_int8_t CPX(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t CPY(CPU6502* cpu) {
+uint8_t CPY(CPU6502* cpu) {
     fetch(cpu);
 
-    cpu->temp = (u_int16_t)cpu->y - (u_int16_t)cpu->fetched;
+    cpu->temp = (uint16_t)cpu->y - (uint16_t)cpu->fetched;
 
     set_flag(cpu, C, cpu->y >= cpu->fetched);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
@@ -576,18 +576,18 @@ u_int8_t CPY(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t DEC(CPU6502* cpu) {
+uint8_t DEC(CPU6502* cpu) {
     fetch(cpu);
 
     cpu->temp = cpu->fetched - 1;
-    write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    write_cpu(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
 
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
     set_flag(cpu, N, cpu->temp & 0x0080);
     return 0;
 }
 
-u_int8_t DEX(CPU6502* cpu){
+uint8_t DEX(CPU6502* cpu){
     cpu->x--;
 
     set_flag(cpu, Z, cpu->x == ZERO);
@@ -595,7 +595,7 @@ u_int8_t DEX(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t DEY(CPU6502* cpu){
+uint8_t DEY(CPU6502* cpu){
     cpu->y--;
 
     set_flag(cpu, Z, cpu->y == ZERO);
@@ -603,7 +603,7 @@ u_int8_t DEY(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t EOR(CPU6502* cpu){
+uint8_t EOR(CPU6502* cpu){
     fetch(cpu);
 
     cpu->a = cpu->a ^ cpu->fetched;
@@ -612,17 +612,17 @@ u_int8_t EOR(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t INC(CPU6502* cpu) {
+uint8_t INC(CPU6502* cpu) {
     fetch(cpu);
     cpu->temp = cpu->fetched + 1;
 
-    write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+    write_cpu(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
     set_flag(cpu, N, cpu->temp & 0x0080);
     return 0;
 }
 
-u_int8_t INX(CPU6502* cpu){
+uint8_t INX(CPU6502* cpu){
     cpu->x++;
 
     set_flag(cpu, Z, cpu->x == ZERO);
@@ -630,7 +630,7 @@ u_int8_t INX(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t INY(CPU6502* cpu){
+uint8_t INY(CPU6502* cpu){
     cpu->y++;
 
     set_flag(cpu, Z, cpu->y == ZERO);
@@ -638,24 +638,24 @@ u_int8_t INY(CPU6502* cpu){
     return 0;
 }
 
-u_int8_t JMP(CPU6502* cpu){
+uint8_t JMP(CPU6502* cpu){
     cpu->pc = cpu->addr_abs;
     return 0;
 }
 
-u_int8_t JSR(CPU6502* cpu) {
+uint8_t JSR(CPU6502* cpu) {
     cpu->pc--;
 
-    write(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
+    write_cpu(cpu, 0x0100 + cpu->stkp, (cpu->pc >> 8) & LOW_BIT_MASK);
     cpu->stkp--;
-    write(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->pc & LOW_BIT_MASK);
     cpu->stkp--;
 
     cpu->pc = cpu->addr_abs;
     return 0;
 }
 
-u_int8_t LDA(CPU6502* cpu){
+uint8_t LDA(CPU6502* cpu){
     fetch(cpu);
     cpu->a = cpu->fetched;
 
@@ -664,7 +664,7 @@ u_int8_t LDA(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t LDX(CPU6502* cpu) {
+uint8_t LDX(CPU6502* cpu) {
     fetch(cpu);
     cpu->x = cpu->fetched;
 
@@ -673,7 +673,7 @@ u_int8_t LDX(CPU6502* cpu) {
     return 1;
 }
 
-u_int8_t LDY(CPU6502* cpu) {
+uint8_t LDY(CPU6502* cpu) {
     fetch(cpu);
     cpu->y = cpu->fetched;
 
@@ -682,7 +682,7 @@ u_int8_t LDY(CPU6502* cpu) {
     return 1;
 }
 
-u_int8_t LSR(CPU6502* cpu){
+uint8_t LSR(CPU6502* cpu){
     fetch(cpu);
     set_flag(cpu, C, cpu->fetched & 0x0001);
 
@@ -694,12 +694,12 @@ u_int8_t LSR(CPU6502* cpu){
         cpu->a = cpu->temp & LOW_BIT_MASK;
     }
     else{
-        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+        write_cpu(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
     }
     return 0;
 }
 
-u_int8_t NOP(CPU6502* cpu) {
+uint8_t NOP(CPU6502* cpu) {
     //There are a LOT of possible NOPs, and it changes per ROM, so more will probably be added.
     switch(cpu->opcode){
         case 0x1C:
@@ -713,7 +713,7 @@ u_int8_t NOP(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t ORA(CPU6502* cpu){
+uint8_t ORA(CPU6502* cpu){
     fetch(cpu);
     cpu->a = cpu->a | cpu->fetched;
 
@@ -722,14 +722,14 @@ u_int8_t ORA(CPU6502* cpu){
     return 1;
 }
 
-u_int8_t PHA(CPU6502* cpu){
-    write(cpu, 0x0100 + cpu->stkp, cpu->a);
+uint8_t PHA(CPU6502* cpu){
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->a);
     cpu->stkp--;
     return 0;
 }
 
-u_int8_t PHP(CPU6502* cpu) {
-    write(cpu, 0x0100 + cpu->stkp, cpu->status | B | U);
+uint8_t PHP(CPU6502* cpu) {
+    write_cpu(cpu, 0x0100 + cpu->stkp, cpu->status | B | U);
 
     set_flag(cpu, B, 0);
     set_flag(cpu, U, 0);
@@ -737,26 +737,26 @@ u_int8_t PHP(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t PLA(CPU6502* cpu) {
+uint8_t PLA(CPU6502* cpu) {
     cpu->stkp++;
-    cpu->a = read(cpu, 0x0100 + cpu->stkp);
+    cpu->a = read_cpu(cpu, 0x0100 + cpu->stkp);
 
     set_flag(cpu, Z, cpu->a == ZERO);
     set_flag(cpu, N, cpu->a & SIGN_MASK);
     return 0;
 }
 
-u_int8_t PLP(CPU6502* cpu) {
+uint8_t PLP(CPU6502* cpu) {
     cpu->stkp++;
-    cpu->status = read(cpu, 0x0100 + cpu->stkp);
+    cpu->status = read_cpu(cpu, 0x0100 + cpu->stkp);
 
     set_flag(cpu, U, 1);
     return 0;
 }
 
-u_int8_t ROL(CPU6502* cpu) {
+uint8_t ROL(CPU6502* cpu) {
     fetch(cpu);
-    cpu->temp = (u_int16_t)(cpu->fetched << 1) | get_flag(cpu, C);
+    cpu->temp = (uint16_t)(cpu->fetched << 1) | get_flag(cpu, C);
 
     set_flag(cpu, C, cpu->temp & HIGH_BIT_MASK);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == 0x0000);
@@ -766,14 +766,14 @@ u_int8_t ROL(CPU6502* cpu) {
         cpu->a = cpu->temp & LOW_BIT_MASK;
     }
     else{
-        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+        write_cpu(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
     }
     return 0;
 }
 
-u_int8_t ROR(CPU6502* cpu) {
+uint8_t ROR(CPU6502* cpu) {
     fetch(cpu);
-    cpu->temp = (u_int16_t)(get_flag(cpu, C) << 7) | (cpu->fetched >> 1);
+    cpu->temp = (uint16_t)(get_flag(cpu, C) << 7) | (cpu->fetched >> 1);
 
     set_flag(cpu, C, cpu->fetched & 0x01);
     set_flag(cpu, Z, (cpu->temp & LOW_BIT_MASK) == ZERO);
@@ -783,67 +783,67 @@ u_int8_t ROR(CPU6502* cpu) {
         cpu->a = cpu->temp & LOW_BIT_MASK;
     }
     else{
-        write(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
+        write_cpu(cpu, cpu->addr_abs, cpu->temp & LOW_BIT_MASK);
     }
     return 0;
 }
 
-u_int8_t RTI(CPU6502* cpu) {
+uint8_t RTI(CPU6502* cpu) {
     cpu->stkp++;
 
-    cpu->status = read(cpu, 0x0100 + cpu->stkp);
+    cpu->status = read_cpu(cpu, 0x0100 + cpu->stkp);
     cpu->status &= ~B;
     cpu->status &= ~U;
 
     cpu->stkp++;
-    cpu->pc = (u_int16_t)read(cpu, 0x0100 + cpu->stkp);
+    cpu->pc = (uint16_t)read_cpu(cpu, 0x0100 + cpu->stkp);
     cpu->stkp++;
-    cpu->pc |= (u_int16_t)read(cpu, 0x0100 + cpu->stkp) << 8;
+    cpu->pc |= (uint16_t)read_cpu(cpu, 0x0100 + cpu->stkp) << 8;
 
     return 0;
 }
 
-u_int8_t RTS(CPU6502* cpu) {
+uint8_t RTS(CPU6502* cpu) {
     cpu->stkp++;
-    cpu->pc = (u_int16_t)read(cpu, 0x0100 + cpu->stkp);
+    cpu->pc = (uint16_t)read_cpu(cpu, 0x0100 + cpu->stkp);
     cpu->stkp++;
-    cpu->pc |= (u_int16_t)read(cpu, 0x0100 + cpu->stkp) << 8;
+    cpu->pc |= (uint16_t)read_cpu(cpu, 0x0100 + cpu->stkp) << 8;
 
     cpu->pc++;
     return 0;
 }
 
-u_int8_t SEC(CPU6502* cpu){
+uint8_t SEC(CPU6502* cpu){
     set_flag(cpu, C, true);
     return 0;
 }
 
-u_int8_t SED(CPU6502* cpu){
+uint8_t SED(CPU6502* cpu){
     set_flag(cpu, D, true);
     return 0;
 }
 
-u_int8_t SEI(CPU6502* cpu){
+uint8_t SEI(CPU6502* cpu){
     set_flag(cpu, I, true);
     return 0;
 }
 
-u_int8_t STA(CPU6502* cpu) {
-    write(cpu, cpu->addr_abs, cpu->a);
+uint8_t STA(CPU6502* cpu) {
+    write_cpu(cpu, cpu->addr_abs, cpu->a);
     return 0;
 }
 
-u_int8_t STX(CPU6502* cpu) {
-    write(cpu, cpu->addr_abs, cpu->x);
+uint8_t STX(CPU6502* cpu) {
+    write_cpu(cpu, cpu->addr_abs, cpu->x);
     return 0;
 }
 
-u_int8_t STY(CPU6502* cpu) {
-    write(cpu, cpu->addr_abs, cpu->y);
+uint8_t STY(CPU6502* cpu) {
+    write_cpu(cpu, cpu->addr_abs, cpu->y);
     return 0;
 }
 
-u_int8_t TAX(CPU6502* cpu) {
+uint8_t TAX(CPU6502* cpu) {
     cpu->x = cpu->a;
 
     set_flag(cpu, Z, cpu->x == ZERO);
@@ -851,7 +851,7 @@ u_int8_t TAX(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t TAY(CPU6502* cpu) {
+uint8_t TAY(CPU6502* cpu) {
     cpu->y = cpu->a;
 
     set_flag(cpu, Z, cpu->y == ZERO);
@@ -859,7 +859,7 @@ u_int8_t TAY(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t TSX(CPU6502* cpu) {
+uint8_t TSX(CPU6502* cpu) {
     cpu->x = cpu->stkp;
 
     set_flag(cpu, Z, cpu->x == ZERO);
@@ -868,7 +868,7 @@ u_int8_t TSX(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t TXA(CPU6502* cpu) {
+uint8_t TXA(CPU6502* cpu) {
     cpu->a = cpu->x;
 
     set_flag(cpu, Z, cpu->a == ZERO);
@@ -876,12 +876,12 @@ u_int8_t TXA(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t TXS(CPU6502* cpu) {
+uint8_t TXS(CPU6502* cpu) {
     cpu->stkp = cpu->x;
     return 0;
 }
 
-u_int8_t TYA(CPU6502* cpu) {
+uint8_t TYA(CPU6502* cpu) {
     cpu->a = cpu->y;
 
     set_flag(cpu, Z, cpu->a == ZERO);
@@ -889,7 +889,7 @@ u_int8_t TYA(CPU6502* cpu) {
     return 0;
 }
 
-u_int8_t XXX(CPU6502* cpu){
+uint8_t XXX(CPU6502* cpu){
     return 0;
 }
 

@@ -3,6 +3,7 @@
 #include "pixelinator.h"
 #include "emulator_state.h"
 #include "title/animation.h"
+#include <math.h>
 
 #define BUTTON_SCALE 5
 

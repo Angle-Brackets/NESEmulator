@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <SDL2/SDL.h>
 
 #include "../memory/cartridge.h"
@@ -149,13 +150,13 @@ PPU2C02* initialize_ppu();
  * @param read_only If the memory is read-only, default is false.
  * @return memory read from
  */
-u_int8_t ppu_cpu_read(PPU2C02* ppu, u_int16_t addr, bool read_only);
+uint8_t ppu_cpu_read(PPU2C02* ppu, uint16_t addr, bool read_only);
 /**
  * Communicates with the main bus to write bytes through the PPU
  * @param addr Address in memory
  * @param data data to write to in memory
  */
-void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data);
+void ppu_cpu_write(PPU2C02* ppu, uint16_t addr, uint8_t data);
 
 /**
  * Communicates with the PPU (Picture Processing Unit) to read bytes
@@ -163,14 +164,14 @@ void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data);
  * @param read_only If the memory is read only, default is false
  * @return The memory read from
  */
-u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only);
+uint8_t ppu_read(PPU2C02* ppu, uint16_t addr, bool read_only);
 
 /**
  * Communicates with the PPU to write bytes
  * @param addr Address to write to
  * @param data data to write to in memory
  */
-void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data);
+void ppu_write(PPU2C02* ppu, uint16_t addr, uint8_t data);
 
 /**
  * Connects the cartridge to the PPU

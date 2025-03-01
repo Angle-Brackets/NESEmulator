@@ -5,13 +5,13 @@ void initialize_cartridge(Cartridge* cart, const char* file) {
     struct Header
     {
         char name[4];
-        u_int8_t prg_rom_chunks;
-        u_int8_t chr_rom_chunks;
-        u_int8_t mapper1;
-        u_int8_t mapper2;
-        u_int8_t prg_ram_size;
-        u_int8_t tv_system1;
-        u_int8_t tv_system2;
+        uint8_t prg_rom_chunks;
+        uint8_t chr_rom_chunks;
+        uint8_t mapper1;
+        uint8_t mapper2;
+        uint8_t prg_ram_size;
+        uint8_t tv_system1;
+        uint8_t tv_system2;
         char unused[5];
     };
 

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 enum MIRROR
 {
@@ -14,14 +15,14 @@ enum MIRROR
 };
 
 typedef struct MAPPER {
-    u_int8_t prg_banks;
-    u_int8_t chr_banks;
+    uint8_t prg_banks;
+    uint8_t chr_banks;
 
     //The 4 memory functions associated with each mapper.
-    bool (*mapper_cpu_read)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t* data);
-    bool (*mapper_cpu_write)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr, u_int8_t data);
-    bool (*mapper_ppu_read)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
-    bool (*mapper_ppu_write)(struct MAPPER* mapper, u_int16_t addr, u_int32_t* mapped_addr);
+    bool (*mapper_cpu_read)(struct MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr, uint8_t* data);
+    bool (*mapper_cpu_write)(struct MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr, uint8_t data);
+    bool (*mapper_ppu_read)(struct MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr);
+    bool (*mapper_ppu_write)(struct MAPPER* mapper, uint16_t addr, uint32_t* mapped_addr);
 
     //IRQ functions
     bool (*mapper_irq_state)(struct MAPPER* mapper);
@@ -41,6 +42,6 @@ typedef struct MAPPER {
  * @param num_prg_banks Number of Program Banks
  * @param num_chr_banks Number of Character Banks
  */
-void init_mapper(MAPPER* mapper, u_int8_t num_prg_banks, u_int8_t num_chr_banks);
+void init_mapper(MAPPER* mapper, uint8_t num_prg_banks, uint8_t num_chr_banks);
 
 #endif //NESEMULATOR_MAPPER_H

@@ -123,8 +123,8 @@ PPU2C02* initialize_ppu() {
     return ppu;
 }
 
-u_int8_t ppu_cpu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
-    u_int8_t data = ZERO;
+uint8_t ppu_cpu_read(PPU2C02* ppu, uint16_t addr, bool read_only) {
+    uint8_t data = ZERO;
 
     switch(addr){
         case CONTROL:
@@ -160,7 +160,7 @@ u_int8_t ppu_cpu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
     return data;
 }
 
-void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
+void ppu_cpu_write(PPU2C02* ppu, uint16_t addr, uint8_t data) {
     switch(addr){
         case CONTROL:
             ppu->control.reg = data;
@@ -211,8 +211,8 @@ void ppu_cpu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
     }
 }
 
-u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
-    u_int8_t data = ZERO;
+uint8_t ppu_read(PPU2C02* ppu, uint16_t addr, bool read_only) {
+    uint8_t data = ZERO;
     addr &= MAX_ADDRESS_PPU;
 
     if(cart_read_ppu(ppu->cart, addr, &data)){
@@ -258,7 +258,7 @@ u_int8_t ppu_read(PPU2C02* ppu, u_int16_t addr, bool read_only) {
     return data;
 }
 
-void ppu_write(PPU2C02* ppu, u_int16_t addr, u_int8_t data) {
+void ppu_write(PPU2C02* ppu, uint16_t addr, uint8_t data) {
     addr &= MAX_ADDRESS_PPU;
     if(cart_write_ppu(ppu->cart, addr, data)){
         //Do nothing..

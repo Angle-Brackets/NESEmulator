@@ -1,6 +1,7 @@
 #ifndef NESEMULATOR_CPU6502_H
 #define NESEMULATOR_CPU6502_H
 
+#include <stdint.h>
 #include "../memory/bus.h"
 
 //Forward Declaring this so we can avoid a circular logic error.
@@ -9,11 +10,11 @@ typedef struct Bus Bus;
 /**
  * Constant struct used to represent possible each instruction.
  */
-const struct INSTRUCTION {
+typedef const struct INSTRUCTION {
     char name[4];
-    u_int8_t (*operation)(struct CPU6502* cpu);
-    u_int8_t (*addr_mode)(struct CPU6502* cpu);
-    u_int8_t cycles;
+    uint8_t (*operation)(struct CPU6502* cpu);
+    uint8_t (*addr_mode)(struct CPU6502* cpu);
+    uint8_t cycles;
 } INSTRUCTION;
 
 /**
@@ -24,26 +25,26 @@ typedef struct CPU6502 {
     struct INSTRUCTION lookup[OPCODES];
 
     //General purpose registers
-    u_int8_t a; //Accumulator
-    u_int8_t x; //X Register
-    u_int8_t y; //Y Register
+    uint8_t a; //Accumulator
+    uint8_t x; //X Register
+    uint8_t y; //Y Register
 
     //Control Flow Registers
-    u_int8_t stkp; //Stack Pointer
-    u_int16_t pc; //Program Counter / Instruction Pointer
-    u_int8_t status; //Condition Codes are set here
+    uint8_t stkp; //Stack Pointer
+    uint16_t pc; //Program Counter / Instruction Pointer
+    uint8_t status; //Condition Codes are set here
 
     enum FLAGS6502 FLAGS;
     Bus* bus;
 
     //Emulator ONLY variables, help make the emulation easier to do
-    u_int8_t fetched; //Current value in ALU
-    u_int16_t temp; //A nice variable for operations
-    u_int16_t addr_abs; //All valid memory addresses pass through here
-    u_int16_t addr_rel; //Holds absolute address after branch
-    u_int8_t opcode; //Instruction Byte
-    u_int8_t cycles; //Count number of cycles remaining in the instruction
-    u_int32_t clock_count; //Global counter of the number of clocks.
+    uint8_t fetched; //Current value in ALU
+    uint16_t temp; //A nice variable for operations
+    uint16_t addr_abs; //All valid memory addresses pass through here
+    uint16_t addr_rel; //Holds absolute address after branch
+    uint8_t opcode; //Instruction Byte
+    uint8_t cycles; //Count number of cycles remaining in the instruction
+    uint32_t clock_count; //Global counter of the number of clocks.
 
 } CPU6502;
 
@@ -75,16 +76,16 @@ void nmi(CPU6502* cpu);
  * rather than emulating the hardware for this cycle directly.
  * @param cpu 6502 CPU we're working with
  */
-void clock(CPU6502* cpu);
+void cpu_clock(CPU6502* cpu);
 
 /**
- * Wrapper for bus.h write.
+ * Wrapper for bus.h write_cpu.
  * Write a byte to the given address
  * @param cpu 6502 CPU we're working with
  * @param addr Address to read from 0x000 - 0xFFFF (might change later)
- * @param data A byte to write to the address
+ * @param data A byte to write_cpu to the address
  */
-void write(CPU6502* cpu, u_int16_t addr, u_int8_t data);
+void write_cpu(CPU6502* cpu, uint16_t addr, uint8_t data);
 
 /**
  * Wrapper for bus.h's read.
@@ -93,7 +94,7 @@ void write(CPU6502* cpu, u_int16_t addr, u_int8_t data);
  * @param addr Address to read from 0x0000 - 0xFFFF (might change later)
  * @return A byte at the given valid address.
  */
-u_int8_t read(CPU6502* cpu, u_int16_t addr);
+uint8_t read_cpu(CPU6502* cpu, uint16_t addr);
 
 /**
  * This function figures out how to access the data depending on the given operation.
@@ -101,7 +102,7 @@ u_int8_t read(CPU6502* cpu, u_int16_t addr);
  * @param cpu 6502 CPU we're working with
  * @return A byte of data
  */
-u_int8_t fetch(CPU6502* cpu);
+uint8_t fetch(CPU6502* cpu);
 
 /**
  * Connects up the bus to the CPU
@@ -115,7 +116,7 @@ void connect_bus(CPU6502* cpu, Bus* bus);
  * @param f Flag struct to read
  * @return The status of a particular bit
  */
-u_int8_t get_flag(CPU6502* cpu, enum FLAGS6502 f);
+uint8_t get_flag(CPU6502* cpu, enum FLAGS6502 f);
 
 /**
  * Sets the flag of a particular bit
@@ -134,57 +135,57 @@ void set_flag(CPU6502* cpu, enum FLAGS6502 f, bool v);
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t IMP(CPU6502* cpu);
+uint8_t IMP(CPU6502* cpu);
 /**
  * Immediate Mode instruction, data is in the next byte
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t IMM(CPU6502* cpu);
+uint8_t IMM(CPU6502* cpu);
 /**
  * Allows absolute addressing of the first 256 bytes (first page) of memory.
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ZP0(CPU6502* cpu);
+uint8_t ZP0(CPU6502* cpu);
 /**
  * The address within the first page is offset by the X register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ZPX(CPU6502* cpu);
+uint8_t ZPX(CPU6502* cpu);
 /**
  * The address within the first page is offset by the Y register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ZPY(CPU6502* cpu);
+uint8_t ZPY(CPU6502* cpu);
 /**
  * Addressing used for branch instructions, allows you to jump -128 to 127 bytes from the instruciton
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t REL(CPU6502* cpu);
+uint8_t REL(CPU6502* cpu);
 /**
  * A given 16-bit address is loaded and used.
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ABS(CPU6502* cpu);
+uint8_t ABS(CPU6502* cpu);
 /**
  * Contents of the X Register are added to the given absolute address
  * If a page is turned, more cycles are required.
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ABX(CPU6502* cpu);
+uint8_t ABX(CPU6502* cpu);
 /**
  * Contents of the Y Register are added to the given absolute address
  * If a page is turned, more cycles are required.
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ABY(CPU6502* cpu);
+uint8_t ABY(CPU6502* cpu);
 /**
  * The given 16-bit address is read to get the address stored at that location (pointer)
  * This has a bug in the hardware, and is emulated here:
@@ -194,14 +195,14 @@ u_int8_t ABY(CPU6502* cpu);
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t IND(CPU6502* cpu);
+uint8_t IND(CPU6502* cpu);
 /**
  * The given 8-bit address is offset by the X Register to index in page 0x00, then a
  * 16-bit address is read from this location.
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t IZX(CPU6502* cpu);
+uint8_t IZX(CPU6502* cpu);
 /**
  * The given 8-bit address is used to index in page 0x00, then a
  * 16-bit address is read from this location and offset by the Y Register.
@@ -211,7 +212,7 @@ u_int8_t IZX(CPU6502* cpu);
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t IZY(CPU6502* cpu);
+uint8_t IZY(CPU6502* cpu);
 
 /**
  * The 56 legal opcodes available on the 6502 Processor, INVALID opcodes are not allowed, despite there
@@ -225,304 +226,304 @@ u_int8_t IZY(CPU6502* cpu);
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BNE(CPU6502* cpu);
+uint8_t BNE(CPU6502* cpu);
 /**
  * Add to the accumulator
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ADC(CPU6502* cpu);
+uint8_t ADC(CPU6502* cpu);
 /**
  * Clear Overflow Flag
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CLV(CPU6502* cpu);
+uint8_t CLV(CPU6502* cpu);
 /**
  * Branch if Carry Set
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BCS(CPU6502* cpu);
+uint8_t BCS(CPU6502* cpu);
 /**
  * Decrement Value at Memory Location
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t DEC(CPU6502* cpu);
+uint8_t DEC(CPU6502* cpu);
 /**
  * Increment Value at Memory Location
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t INC(CPU6502* cpu);
+uint8_t INC(CPU6502* cpu);
 /**
  * Branch if Overflow Set
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BVS(CPU6502* cpu);
+uint8_t BVS(CPU6502* cpu);
 /**
  * Jump to Subroutine
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t JSR(CPU6502* cpu);
-u_int8_t LSR(CPU6502* cpu);
+uint8_t JSR(CPU6502* cpu);
+uint8_t LSR(CPU6502* cpu);
 /**
  * Push Status Register to Stack
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t PHP(CPU6502* cpu);
-u_int8_t ROR(CPU6502* cpu);
+uint8_t PHP(CPU6502* cpu);
+uint8_t ROR(CPU6502* cpu);
 /**
  * Set Carry Flag
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t SEC(CPU6502* cpu);
+uint8_t SEC(CPU6502* cpu);
 /**
  * Store X Register at Address
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t STX(CPU6502* cpu);
+uint8_t STX(CPU6502* cpu);
 /**
  * Transfer Stack Pointer to X Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t TSX(CPU6502* cpu);
+uint8_t TSX(CPU6502* cpu);
 /**
  * Branch if positive
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BPL(CPU6502* cpu);
+uint8_t BPL(CPU6502* cpu);
 /**
  * Bitwise AND on accumulator and fetched
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t AND(CPU6502* cpu);
+uint8_t AND(CPU6502* cpu);
 /**
  * Compare Accumulator to Fetched
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CMP(CPU6502* cpu);
+uint8_t CMP(CPU6502* cpu);
 /**
  * Branch if equal
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BEQ(CPU6502* cpu);
+uint8_t BEQ(CPU6502* cpu);
 /**
  * Decrement X Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t DEX(CPU6502* cpu);
+uint8_t DEX(CPU6502* cpu);
 /**
  * Increment X Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t INX(CPU6502* cpu);
+uint8_t INX(CPU6502* cpu);
 /**
  * Clear Carry Flag
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CLC(CPU6502* cpu);
+uint8_t CLC(CPU6502* cpu);
 /**
  * Load into the Accumulator
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t LDA(CPU6502* cpu);
+uint8_t LDA(CPU6502* cpu);
 /**
  * Blank Instruction - No Operation
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t NOP(CPU6502* cpu);
+uint8_t NOP(CPU6502* cpu);
 /**
  * Pop Accumulator off Stack
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t PLA(CPU6502* cpu);
-u_int8_t RTI(CPU6502* cpu);
+uint8_t PLA(CPU6502* cpu);
+uint8_t RTI(CPU6502* cpu);
 /**
  * Set Decimal Flag
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t SED(CPU6502* cpu);
+uint8_t SED(CPU6502* cpu);
 /**
  * Store Y Register at Address
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t STY(CPU6502* cpu);
+uint8_t STY(CPU6502* cpu);
 /**
  * Transfer X Register to Accumulator
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t TXA(CPU6502* cpu);
+uint8_t TXA(CPU6502* cpu);
 /**
  * Break Program to service interrupt
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BRK(CPU6502* cpu);
+uint8_t BRK(CPU6502* cpu);
 /**
  * Arithmetic Shift Left
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ASL(CPU6502* cpu);
+uint8_t ASL(CPU6502* cpu);
 /**
  * Compare X Register to Fetched
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CPX(CPU6502* cpu);
-u_int8_t BIT(CPU6502* cpu);
+uint8_t CPX(CPU6502* cpu);
+uint8_t BIT(CPU6502* cpu);
 /**
  * Decrement Y Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t DEY(CPU6502* cpu);
+uint8_t DEY(CPU6502* cpu);
 /**
  * Increment Y Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t INY(CPU6502* cpu);
+uint8_t INY(CPU6502* cpu);
 /**
  * Clear Decimal Flag
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CLD(CPU6502* cpu);
+uint8_t CLD(CPU6502* cpu);
 /**
  * Load into X register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t LDX(CPU6502* cpu);
+uint8_t LDX(CPU6502* cpu);
 /**
  * Bitwise OR on Accumulator and Fetched
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t ORA(CPU6502* cpu);
+uint8_t ORA(CPU6502* cpu);
 /**
  * Pop Status Register off Stack
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t PLP(CPU6502* cpu);
-u_int8_t RTS(CPU6502* cpu);
-u_int8_t SEI(CPU6502* cpu);
+uint8_t PLP(CPU6502* cpu);
+uint8_t RTS(CPU6502* cpu);
+uint8_t SEI(CPU6502* cpu);
 /**
  * Transfer Accumulator to X Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t TAX(CPU6502* cpu);
+uint8_t TAX(CPU6502* cpu);
 /**
  * Transfer X Register to Stack Pointer
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t TXS(CPU6502* cpu);
+uint8_t TXS(CPU6502* cpu);
 /**
  * Branch if Overflow clear
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BVC(CPU6502* cpu);
+uint8_t BVC(CPU6502* cpu);
 /**
  * Branch if Carry Clear
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BCC(CPU6502* cpu);
+uint8_t BCC(CPU6502* cpu);
 /**
  * Compare Y Register to Fetched
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CPY(CPU6502* cpu);
+uint8_t CPY(CPU6502* cpu);
 /**
  * Branch if negative
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t BMI(CPU6502* cpu);
-u_int8_t EOR(CPU6502* cpu);
+uint8_t BMI(CPU6502* cpu);
+uint8_t EOR(CPU6502* cpu);
 /**
  * Jump to Memory Location
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t JMP(CPU6502* cpu);
+uint8_t JMP(CPU6502* cpu);
 /**
  * Clear Interrupt Flag (Disable Interrupts)
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t CLI(CPU6502* cpu);
+uint8_t CLI(CPU6502* cpu);
 /**
  * Load into Y Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t LDY(CPU6502* cpu);
+uint8_t LDY(CPU6502* cpu);
 /**
  * Push Accumulator to Stack
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t PHA(CPU6502* cpu);
-u_int8_t ROL(CPU6502* cpu);
+uint8_t PHA(CPU6502* cpu);
+uint8_t ROL(CPU6502* cpu);
 /**
  * Subtract to the accumulator
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t SBC(CPU6502* cpu);
+uint8_t SBC(CPU6502* cpu);
 /**
  * Store Accumulator at Address
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t STA(CPU6502* cpu);
+uint8_t STA(CPU6502* cpu);
 /**
  * Transfer Accumulator to Y Register
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t TAY(CPU6502* cpu);
+uint8_t TAY(CPU6502* cpu);
 /**
  * Transfer Y Register to Accumulator
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t TYA(CPU6502* cpu);
+uint8_t TYA(CPU6502* cpu);
 
 /**
  * Invalid opcode, basically a NOP
  * @param cpu 6502 CPU
  * @return 0 if no more cycles are needed, 1 if more cycles are needed
  */
-u_int8_t XXX(CPU6502* cpu);
+uint8_t XXX(CPU6502* cpu);
 
 //THIS IS NOT MEMORY SAFE! ONLY USE FOR TESTING AS IT LEAKS MEMORY!
 void disassemble(CPU6502* cpu, uint16_t start, uint16_t stop);

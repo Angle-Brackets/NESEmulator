@@ -6,7 +6,7 @@ void clear_memory(Bus* bus){
     }
 }
 
-void bus_cpu_write(Bus* bus, u_int16_t addr, u_int8_t data){
+void bus_cpu_write(Bus* bus, uint16_t addr, uint8_t data){
     if(cart_write_cpu(bus->cart, addr, data)){
         //Do nothing..
     }
@@ -26,8 +26,8 @@ void bus_cpu_write(Bus* bus, u_int16_t addr, u_int8_t data){
     }
 }
 
-u_int8_t bus_cpu_read(Bus* bus, u_int16_t addr, bool readOnly){
-    u_int8_t data = ZERO;
+uint8_t bus_cpu_read(Bus* bus, uint16_t addr, bool readOnly){
+    uint8_t data = ZERO;
     if(cart_read_cpu(bus->cart, addr, &data)){
         //Do nothing..
     }
@@ -90,7 +90,7 @@ void bus_clock(Bus* bus) {
             }
         }
         else{
-            clock(bus->cpu);
+            cpu_clock(bus->cpu);
         }
     }
 
